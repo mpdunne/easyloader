@@ -8,26 +8,11 @@ from torch.utils.data import DataLoader
 
 from uloops.loaders.common import get_n_batches
 
-
-def sample_ixs(ixs: Sequence[int],
-               n_samples: int = None,
-               shuffle: bool = False,
-               sample_seed: int = None,
-               shuffle_seed: int = None) -> Sequence[int]:
-
-    if n_samples != None and n_samples != len(ixs):
-        random.seed(sample_seed)
-        ixs = random.sample([*range(len(ixs))], n_samples)
-        ixs = sorted(ixs)
-
-    if shuffle:
-        random.seed(shuffle_seed)
-        ixs = random.sample(ixs, len(ixs))
-
-    return ixs
+from easyloader.loaders.base import EasyDataLoader
+from easyloader.common.array import sample_ixs
 
 
-class ArrayDataLoader(DataLoader):
+class ArrayDataLoader(EasyDataLoader):
     """
     Turn a pandas data frame into a PyTorch Data Loader.
 
@@ -36,9 +21,26 @@ class ArrayDataLoader(DataLoader):
     def __init__(self,
                  arrays: Sequence[np.ndarray],
                  batch_size: int = 1,
-                 sample_fraction: float = 1.0,
+                 sample_fraction: float = None,
                  sample_seed: int = None,
-                 shuffle: bool = False):
+                 shuffle: bool = False,
+                 shuffle_seed: bool = None):
+        """
+
+        :param arrays: A list of arrays to use for the data loader
+        :param batch_size: The batch size.
+        :param sample_fraction: Fraction of the dataset to sample.
+        :param sample_seed: Seed for random sampling.
+        :param shuffle: Whether to shuffle the data.
+        :param shuffle_seed: The seed to be used for shuffling.
+        """
+
+        # Initialize the parent class
+        super().__init__(batch_size=batch_size,
+                         sample_fraction=sample_fraction,
+                         sample_seed=sample_seed,
+                         shuffle=shuffle,
+                         shuffle_seed=shuffle_seed)
 
         array_lengths = [len(arr) for arr in arrays]
         if len(set(array_lengths)) != 1:
@@ -56,13 +58,6 @@ class ArrayDataLoader(DataLoader):
 
         self.ixs = ixs
         self.arrays = arrays
-
-        # Only do any shuffling at iter time.
-        self.shuffle = shuffle
-
-        # Calculate number of batches
-        self.n_batches = get_n_batches(self.data_length, batch_size)
-        self.batch_size = batch_size
 
         # These will be set after __iter__ has been called
         self.groups = None

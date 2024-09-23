@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader
 
 
-class EasyDataloader(DataLoader):
+class EasyDataLoader(DataLoader, ABC):
     """
     Interface class for EasyLoader dataloaders with common functionality for sampling and indexing.
     """

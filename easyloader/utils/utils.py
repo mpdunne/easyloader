@@ -4,6 +4,13 @@ from torch.utils.data import DataLoader
 from typing import Sequence, Union
 
 
+def get_n_batches(data_length, batch_size):
+    n_batches, remainder = divmod(data_length, batch_size)
+    if remainder > 0:
+        n_batches += 1
+    return n_batches
+
+
 def get_tts_loaders(dataset_stub: str,
                     batch_size: int = 100,
                     keys: Sequence[str] = ['embedding', 'value'],

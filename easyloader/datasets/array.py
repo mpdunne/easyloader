@@ -3,31 +3,14 @@ import random
 import torch
 
 from typing import Sequence
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 
 from uloops.loaders.common import get_n_batches
 
-
-def sample_ixs(ixs: Sequence[int],
-               n_samples: int = None,
-               shuffle: bool = False,
-               sample_seed: int = None,
-               shuffle_seed: int = None) -> Sequence[int]:
-
-    if n_samples != None and n_samples != len(ixs):
-        random.seed(sample_seed)
-        ixs = random.sample([*range(len(ixs))], n_samples)
-        ixs = sorted(ixs)
-
-    if shuffle:
-        random.seed(shuffle_seed)
-        ixs = random.sample(ixs, len(ixs))
-
-    return ixs
+from easyloader.datasets.base import EasyDataset
+from easyloader.common.array import sample_ixs
 
 
-class ArrayDataset(Dataset):
+class ArrayDataset(EasyDataset):
     """
     Turn a list of numpy arrays into a PyTorch Data Set.
 
@@ -37,7 +20,22 @@ class ArrayDataset(Dataset):
                  arrays: Sequence[np.ndarray],
                  sample_fraction: float = 1.0,
                  sample_seed: int = None,
-                 shuffle: bool = False):
+                 shuffle: bool = False,
+                 shuffle_seed: int = None):
+        """
+
+        :param arrays: The arrays.
+        :param sample_fraction: Fraction of the dataset to sample.
+        :param sample_seed: Seed for random sampling.
+        :param shuffle: Whether to shuffle the data.
+        :param shuffle_seed: The seed to be used for shuffling.
+        """
+
+        # Initialize the parent class
+        super().__init__(sample_fraction=sample_fraction,
+                         sample_seed=sample_seed,
+                         shuffle=shuffle,
+                         shuffle_seed=shuffle_seed)
 
         array_lengths = [len(arr) for arr in arrays]
         if len(set(array_lengths)) != 1:

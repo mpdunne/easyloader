@@ -10,27 +10,11 @@ from torch.utils.data import Dataset, DataLoader
 from uloops.loaders.common import get_n_batches
 
 
-def check_keys(data_keys, requested_keys, allow_missing_keys=False):
-    present_keys = []
-    missing_keys = []
-    for key in requested_keys:
-        if key in data_keys:
-            present_keys.append(key)
-        else:
-            missing_keys.append(key)
-
-    if missing_keys and not allow_missing_keys:
-        missing_key_string = ', '.join(missing_keys)
-        raise KeyError(f'The following keys are missing from the h5 file: {missing_key_string}. '
-                       'If you don\'t care, set allow_missing_keys to True.')
-
-    if not present_keys:
-        raise KeyError('None of the provided keys are present in the H5 file. Need at least one.')
-
-    return present_keys
+from easyloader.loaders.base import EasyDataLoader
+from easyloader.common.h5 import check_keys
 
 
-class H5DataLoader(DataLoader):
+class H5DataLoader(EasyDataLoader):
     """
     Turn an H5 file into a Torch dataset.
     Using granular weak shuffling.
@@ -41,12 +25,30 @@ class H5DataLoader(DataLoader):
                  data_path: Union[str, Path],
                  keys: Sequence[str],
                  allow_missing_keys: bool = False,
-                 batch_size: int = 1,
-                 sample_fraction: float = 1.0,
-                 sample_seed: int = None,
-                 grain_size: int = 1,
                  index_key: str = None,
-                 shuffle: bool = False):
+                 batch_size: int = 1,
+                 grain_size: int = 1,
+                 sample_fraction: float = None,
+                 sample_seed: int = None,
+                 shuffle: bool = False,
+                 shuffle_seed: bool = None):
+        """
+
+        :param df:
+        :param column_groups:
+        :param batch_size: The batch size.
+        :param sample_fraction: Fraction of the dataset to sample.
+        :param sample_seed: Seed for random sampling.
+        :param shuffle: Whether to shuffle the data.
+        :param shuffle_seed: The seed to be used for shuffling.
+        """
+
+        # Initialize the parent class
+        super().__init__(batch_size=batch_size,
+                         sample_fraction=sample_fraction,
+                         sample_seed=sample_seed,
+                         shuffle=shuffle,
+                         shuffle_seed=shuffle_seed)
 
         if batch_size % grain_size != 0:
             raise ValueError(f'Batch size must be divisible by grain size.')
@@ -85,7 +87,6 @@ class H5DataLoader(DataLoader):
         self.sampled = sample_fraction != 1 or shuffle
 
         self.grain_size = grain_size
-        self.batch_size = batch_size
         self.n_batches = n_batches
         self.n_grains = n_grains
         self.grains_per_batch = batch_size // grain_size

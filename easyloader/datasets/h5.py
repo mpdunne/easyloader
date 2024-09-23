@@ -1,36 +1,17 @@
 import h5py
 import random
 import numpy as np
-import torch
 
 from pathlib import Path
 from typing import Sequence, Union
-from torch.utils.data import Dataset, DataLoader
 
 from uloops.loaders.common import get_n_batches
 
-
-def check_keys(data_keys, requested_keys, allow_missing_keys=False):
-    present_keys = []
-    missing_keys = []
-    for key in requested_keys:
-        if key in data_keys:
-            present_keys.append(key)
-        else:
-            missing_keys.append(key)
-
-    if missing_keys and not allow_missing_keys:
-        missing_key_string = ', '.join(missing_keys)
-        raise KeyError(f'The following keys are missing from the h5 file: {missing_key_string}. '
-                       'If you don\'t care, set allow_missing_keys to True.')
-
-    if not present_keys:
-        raise KeyError('None of the provided keys are present in the H5 file. Need at least one.')
-
-    return present_keys
+from easyloader.datasets.base import EasyDataset
+from easyloader.common.h5 import check_keys
 
 
-class H5Dataset(Dataset):
+class H5Dataset(EasyDataset):
     """
     EV = Embedding, Value
 
@@ -41,9 +22,22 @@ class H5Dataset(Dataset):
                  keys: Sequence[str],
                  allow_missing_keys: bool = False,
                  sample_fraction: float = 1.0,
-                 sample_seed: int = 100,
-                 index_key: str = None,
-                 shuffle: bool = False):
+                 sample_seed: int = None,
+                 shuffle: bool = False,
+                 shuffle_seed: int = None):
+
+        """
+
+        :param data_path:
+        :param keys:
+        :param allow_missing_keys:
+        :param df: The DF to use for the data set.
+        :param sample_fraction: Fraction of the dataset to sample.
+        :param sample_seed: Seed for random sampling.
+        :param shuffle: Whether to shuffle the data.
+        :param shuffle_seed: The seed to be used for shuffling.
+        """
+
 
         data = h5py.File(data_path, "r")
         present_keys = check_keys(data.keys(), keys, allow_missing_keys)
