@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader
 
+from easyloader.utils.random import get_random_state
 
 class EasyDataLoader(DataLoader, ABC):
     """
@@ -10,24 +11,26 @@ class EasyDataLoader(DataLoader, ABC):
     def __init__(self,
                  batch_size: int = 1,
                  sample_fraction: float = None,
-                 sample_seed: int = None,
                  shuffle: bool = False,
-                 shuffle_seed: bool = None):
+                 sample_seed: int = None,
+                 shuffle_seed: bool = None,):
         """
         Constructor for the EasyDataLoader class Interface.
 
         :param batch_size: The batch size.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
-        :param shuffle: Whether to shuffle the data.
         :param shuffle_seed: The seed to be used for shuffling.
+        :param shuffle: Whether to shuffle the data.
         """
 
         self.batch_size = batch_size
         self.sample_fraction = sample_fraction
-        self.sample_seed = sample_seed
         self.shuffle = shuffle
-        self.shuffle_seed = shuffle_seed
+
+        self.sample_random_state = get_random_state(sample_seed)
+        self.shuffle_random_state = get_random_state(shuffle_seed)
+
         self.ids = None
         self.index = None
 

@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 
 from easyloader.loaders.base import EasyDataLoader
-from easyloader.common.df import sample_df
+from easyloader.data.df import DFData
 from typing import Sequence
 
 
@@ -15,20 +15,22 @@ class DFDataLoader(EasyDataLoader):
     def __init__(self,
                  df: pd.DataFrame,
                  column_groups: Sequence[Sequence[str]],
+                 id_column: str = None,
                  batch_size: int = 1,
                  sample_fraction: float = None,
-                 sample_seed: int = None,
                  shuffle: bool = False,
+                 sample_seed: int = None,
                  shuffle_seed: bool = None):
         """
         Constructor for the DFDataLoader class.
 
-        :param df:
-        :param column_groups:
+        :param df: The DF to use for the data loader.
+        :param column_groups: The column groups to use.
+        :param id_column: The column to use as IDs. If not set, use the DF index.
         :param batch_size: The batch size.
         :param sample_fraction: Fraction of the dataset to sample.
-        :param sample_seed: Seed for random sampling.
         :param shuffle: Whether to shuffle the data.
+        :param sample_seed: Seed for random sampling.
         :param shuffle_seed: The seed to be used for shuffling.
         """
 
@@ -39,27 +41,42 @@ class DFDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        # Store the DF. Do the initial sampling now.
-        self.df = df
-        self.data_length = int(sample_fraction * len(self.df))
-        self.df = sample_df(df, n_samples=self.data_length, sample_seed=sample_seed, shuffle=False)
+        self.data = DFData(df, id_column=id_column, sample_seed=sample_seed, shuffle_seed=shuffle_seed)
         self.column_groups = column_groups
 
-        # These will be set when __iter__ is called
+        # This will be set when __iter__ is called
         self.groups = None
-        self.index = None
+
+    @property
+    def index(self):
+        """
+        The numeric indices of the underlying DF, relative to the inputted one.
+
+        :return: The indices.
+        """
+        return self.data.index
+
+    @property
+    def ids(self):
+        """
+        The IDs, according to the id_column attribute.
+
+        :return: The IDs
+        """
+        return self.data.ids
 
     def __iter__(self):
-        df = sample_df(self.df, shuffle=self.shuffle)
-        self.index = df.index
-        self.groups = [df[cg].to_numpy() for cg in self.column_groups]
+        if self.shuffle:
+            self.data.shuffle()
+
+        self.groups = [self.data[cg].to_numpy() for cg in self.column_groups]
         self.i = 0
         return self
 
     def __next__(self):
-        if self.i >= self.data_length:
+        if self.i >= len(self.data):
             raise StopIteration
-        batch = tuple(torch.Tensor(g[self.i: self.i + self.batch_size]) for g in self.groups)
+        batch = tuple(torch.Tensor(g.iloc[self.i: self.i + self.batch_size]) for g in self.groups)
         self.i += self.batch_size
         return batch
 
