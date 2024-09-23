@@ -12,7 +12,7 @@ class EasyDataset(Dataset, ABC):
                  shuffle: bool = False,
                  shuffle_seed: bool = None):
         """
-        Initializes the dataset with sampling and shuffling options.
+        Constructor for the EasyDataset class Interface.
 
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.

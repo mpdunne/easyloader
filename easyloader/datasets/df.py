@@ -1,21 +1,16 @@
 import pandas as pd
-import random
-import torch
 
 from typing import Sequence
-from torch.utils.data import Dataset, DataLoader
-
-from uloops.loaders.common import get_n_batches
 
 from easyloader.datasets.base import EasyDataset
+from easyloader.common.df import sample_df
 
 
 class DFDataset(EasyDataset):
     """
-    Turn a pandas data frame into a PyTorch Data Set.
+    Turn a Pandas data frame into a PyTorch Data Set.
 
     """
-
 
     def __init__(self,
                  df: pd.DataFrame,
@@ -26,6 +21,7 @@ class DFDataset(EasyDataset):
                  shuffle_seed: int = None):
 
         """
+        Constructor for the DFDataset class.
 
         :param df: The DF to use for the data set.
         :param column_groups: The column groups to use.

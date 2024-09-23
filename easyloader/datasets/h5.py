@@ -5,33 +5,29 @@ import numpy as np
 from pathlib import Path
 from typing import Sequence, Union
 
-from uloops.loaders.common import get_n_batches
-
 from easyloader.datasets.base import EasyDataset
 from easyloader.common.h5 import check_keys
 
 
 class H5Dataset(EasyDataset):
     """
-    EV = Embedding, Value
+    Turn a H5 file into a PyTorch Data Set.
 
     """
 
     def __init__(self,
                  data_path: Union[str, Path],
                  keys: Sequence[str],
-                 allow_missing_keys: bool = False,
                  sample_fraction: float = 1.0,
                  sample_seed: int = None,
                  shuffle: bool = False,
                  shuffle_seed: int = None):
 
         """
+        Constructor for the H5Dataset class.
 
-        :param data_path:
-        :param keys:
-        :param allow_missing_keys:
-        :param df: The DF to use for the data set.
+        :param data_path: The path to the H5 file that you want to load.
+        :param keys: The keys that you want to grab.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
         :param shuffle: Whether to shuffle the data.

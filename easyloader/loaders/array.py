@@ -1,12 +1,7 @@
 import numpy as np
-import random
 import torch
 
 from typing import Sequence
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-
-from uloops.loaders.common import get_n_batches
 
 from easyloader.loaders.base import EasyDataLoader
 from easyloader.common.array import sample_ixs
@@ -14,7 +9,7 @@ from easyloader.common.array import sample_ixs
 
 class ArrayDataLoader(EasyDataLoader):
     """
-    Turn a pandas data frame into a PyTorch Data Loader.
+    Turn a list of NumPy arrays into a PyTorch Data Loader.
 
     """
 

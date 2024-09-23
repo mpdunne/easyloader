@@ -1,19 +1,14 @@
 import pandas as pd
-import random
 import torch
-
-from typing import Sequence
-from torch.utils.data import Dataset, DataLoader
-
-from uloops.loaders.common import get_n_batches
 
 from easyloader.loaders.base import EasyDataLoader
 from easyloader.common.df import sample_df
+from typing import Sequence
 
 
 class DFDataLoader(EasyDataLoader):
     """
-    Turn a pandas data frame into a PyTorch Data Loader.
+    Turn a Pandas data frame into a PyTorch Data Loader.
 
     """
 
@@ -26,6 +21,7 @@ class DFDataLoader(EasyDataLoader):
                  shuffle: bool = False,
                  shuffle_seed: bool = None):
         """
+        Constructor for the DFDataLoader class.
 
         :param df:
         :param column_groups:

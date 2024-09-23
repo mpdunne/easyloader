@@ -5,7 +5,6 @@ import torch
 
 from pathlib import Path
 from typing import Sequence, Union
-from torch.utils.data import Dataset, DataLoader
 
 from uloops.loaders.common import get_n_batches
 
@@ -24,7 +23,6 @@ class H5DataLoader(EasyDataLoader):
     def __init__(self,
                  data_path: Union[str, Path],
                  keys: Sequence[str],
-                 allow_missing_keys: bool = False,
                  index_key: str = None,
                  batch_size: int = 1,
                  grain_size: int = 1,
@@ -33,9 +31,10 @@ class H5DataLoader(EasyDataLoader):
                  shuffle: bool = False,
                  shuffle_seed: bool = None):
         """
+        Constructor for the H5DtaLoader class
 
-        :param df:
-        :param column_groups:
+        :param data_path: The path to the H5 file that you want to use.
+        :param keys: The keys that you want to grab.
         :param batch_size: The batch size.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.

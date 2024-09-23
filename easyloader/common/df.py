@@ -1,3 +1,7 @@
+import pandas as pd
+import random
+
+
 def sample_df(df: pd.DataFrame,
               n_samples: int = None,
               shuffle: bool = False,
@@ -14,4 +18,3 @@ def sample_df(df: pd.DataFrame,
         df = df.sample(frac=1, random_state=shuffle_seed)
 
     return df
-

@@ -1,10 +1,6 @@
 import numpy as np
-import random
-import torch
 
 from typing import Sequence
-
-from uloops.loaders.common import get_n_batches
 
 from easyloader.datasets.base import EasyDataset
 from easyloader.common.array import sample_ixs
@@ -13,7 +9,6 @@ from easyloader.common.array import sample_ixs
 class ArrayDataset(EasyDataset):
     """
     Turn a list of numpy arrays into a PyTorch Data Set.
-
     """
 
     def __init__(self,
@@ -23,6 +18,7 @@ class ArrayDataset(EasyDataset):
                  shuffle: bool = False,
                  shuffle_seed: int = None):
         """
+        Constructor for the ArrayDataset class.
 
         :param arrays: The arrays.
         :param sample_fraction: Fraction of the dataset to sample.

@@ -14,7 +14,7 @@ class EasyDataLoader(DataLoader, ABC):
                  shuffle: bool = False,
                  shuffle_seed: bool = None):
         """
-        Initializes the dataloader with batching and shuffling options.
+        Constructor for the EasyDataLoader class Interface.
 
         :param batch_size: The batch size.
         :param sample_fraction: Fraction of the dataset to sample.
