@@ -26,33 +26,6 @@ def sample_df(df: pd.DataFrame,
     return df
 
 
-class DFDataset(Dataset):
-    """
-    Turn a pandas data frame into a PyTorch Data Set.
-
-    """
-
-    def __init__(self,
-                 df: pd.DataFrame,
-                 column_groups: Sequence[Sequence[str]],
-                 sample_fraction: float = 1.0,
-                 sample_seed: int = None,
-                 shuffle: bool = False):
-
-        self.data_length = int(sample_fraction * len(df))
-        df = sample_df(df, n_samples=self.data_length, sample_seed=sample_seed, shuffle=shuffle)
-
-        self.column_groups = column_groups
-        self.groups = [df[cg].to_numpy() for cg in self.column_groups]
-        self.index = df.index
-
-    def __len__(self) -> int:
-        return self.data_length
-
-    def __getitem__(self, ix: int):
-        return tuple([g[ix] for g in self.groups])
-
-
 class DFDataLoader(DataLoader):
     """
     Turn a pandas data frame into a PyTorch Data Loader.
