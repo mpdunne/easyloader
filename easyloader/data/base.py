@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Iterable
 
 from easyloader.utils.random import get_random_state
@@ -42,7 +42,6 @@ class EasyData:
         pass
 
     @abstractmethod
-    @property
     def index(self):
         pass
 

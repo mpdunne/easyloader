@@ -1,4 +1,4 @@
-
+_ = '''
 def check_keys(data_keys, requested_keys, allow_missing_keys=False):
     present_keys = []
     missing_keys = []
@@ -16,4 +16,4 @@ def check_keys(data_keys, requested_keys, allow_missing_keys=False):
     if not present_keys:
         raise KeyError('None of the provided keys are present in the H5 file. Need at least one.')
 
-    return present_keys
+    return present_keys'''

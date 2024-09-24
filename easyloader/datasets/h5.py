@@ -1,4 +1,4 @@
-import h5py
+_ = '''import h5py
 import random
 import numpy as np
 
@@ -73,4 +73,4 @@ class H5Dataset(EasyDataset):
             else:
                 values.append(np.array([], dtype=np.float32))
 
-        return tuple(values)
+        return tuple(values)'''

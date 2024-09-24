@@ -1,4 +1,4 @@
-import h5py
+_ = '''import h5py
 import random
 import numpy as np
 import torch
@@ -127,4 +127,4 @@ class H5DataLoader(EasyDataLoader):
         return batch
 
     def __len__(self) -> int:
-        return self.n_batches
+        return self.n_batches'''
