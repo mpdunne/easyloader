@@ -26,14 +26,7 @@ class EasyDataLoader(DataLoader, ABC):
         """
 
         self.batch_size = batch_size
-        self.sample_fraction = sample_fraction
         self.shuffle = shuffle
-
-        self.sample_random_state = get_random_state(sample_seed)
-        self.shuffle_random_state = get_random_state(shuffle_seed)
-
-        self.ids = None
-        self.index = None
 
     @abstractmethod
     def __iter__(self):

@@ -1,9 +1,11 @@
 import pandas as pd
 import torch
 
+from typing import Sequence
+
 from easyloader.loaders.base import EasyDataLoader
 from easyloader.data.df import DFData
-from typing import Sequence
+from easyloader.utils.batch import get_n_batches
 
 
 class DFDataLoader(EasyDataLoader):
@@ -44,9 +46,6 @@ class DFDataLoader(EasyDataLoader):
         self.data = DFData(df, id_column=id_column, sample_seed=sample_seed, shuffle_seed=shuffle_seed)
         self.column_groups = column_groups
 
-        # This will be set when __iter__ is called
-        self.groups = None
-
     @property
     def index(self):
         """
@@ -69,16 +68,16 @@ class DFDataLoader(EasyDataLoader):
         if self.shuffle:
             self.data.shuffle()
 
-        self.groups = [self.data[cg].to_numpy() for cg in self.column_groups]
         self.i = 0
         return self
 
     def __next__(self):
         if self.i >= len(self.data):
             raise StopIteration
-        batch = tuple(torch.Tensor(g.iloc[self.i: self.i + self.batch_size]) for g in self.groups)
+
+        batch = tuple(torch.Tensor(self.data.df[g].iloc[self.i: self.i + self.batch_size]) for g in self.column_groups)
         self.i += self.batch_size
         return batch
 
     def __len__(self) -> int:
-        return self.n_batches
+        return get_n_batches(self.data, self.batch_size)

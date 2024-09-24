@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-from typing import Iterable
+from typing import Iterable, Sequence
 
 from easyloader.data.base import EasyData
 

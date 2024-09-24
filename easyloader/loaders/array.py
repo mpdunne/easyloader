@@ -1,10 +1,11 @@
 import numpy as np
 import torch
 
-from typing import Sequence
+from typing import Any, Sequence
 
 from easyloader.loaders.base import EasyDataLoader
-from easyloader.common.array import sample_ixs
+from easyloader.data.array import ArrayData
+from easyloader.utils.batch import get_n_batches
 
 
 class ArrayDataLoader(EasyDataLoader):
@@ -15,6 +16,7 @@ class ArrayDataLoader(EasyDataLoader):
 
     def __init__(self,
                  arrays: Sequence[np.ndarray],
+                 ids: Sequence[Any],
                  batch_size: int = 1,
                  sample_fraction: float = None,
                  sample_seed: int = None,
@@ -37,38 +39,12 @@ class ArrayDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        array_lengths = [len(arr) for arr in arrays]
-        if len(set(array_lengths)) != 1:
-            raise ValueError('Arrays must all have the same length.')
-
-        self.data_length = int(sample_fraction * array_lengths[0])
-
-        # Only sample if we're asked to
-        if sample_fraction != 1:
-            ixs = sample_ixs(range(array_lengths[0]), n_samples=self.data_length, sample_seed=sample_seed)
-            arrays = [arr[ixs] for arr in arrays]
-        else:
-            ixs = [*range(array_lengths[0])]
-            arrays = arrays
-
-        self.ixs = ixs
-        self.arrays = arrays
-
-        # These will be set after __iter__ has been called
-        self.groups = None
-        self.index = None
+        self.data = ArrayData(arrays, ids=ids, sample_fraction=sample_fraction,
+                              sample_seed=sample_seed, shuffle_seed=shuffle_seed)
 
     def __iter__(self):
         if self.shuffle:
-            sub_ixs = sample_ixs([*range(len(self.ixs))], n_samples=self.data_length)
-            ixs = list(np.array(self.ixs)[sub_ixs])
-            groups = [arr[sub_ixs] for arr in self.arrays]
-        else:
-            ixs = self.ixs
-            groups = self.arrays
-
-        self.index = ixs
-        self.groups = groups
+            self.data.shuffle()
 
         self.i = 0
         return self
@@ -76,9 +52,9 @@ class ArrayDataLoader(EasyDataLoader):
     def __next__(self):
         if self.i >= self.n_batches:
             raise StopIteration
-        batch = tuple(torch.Tensor(g[self.i: self.i + self.batch_size]) for g in self.groups)
+        batch = tuple(torch.Tensor(arr[self.i: self.i + self.batch_size]) for arr in self.data.arrays)
         self.i += 1
         return batch
 
     def __len__(self) -> int:
-        return self.n_batches
+        return get_n_batches(self.data, self.batch_size)
