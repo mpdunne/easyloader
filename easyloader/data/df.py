@@ -38,7 +38,7 @@ class DFData(EasyData):
 
         self._index = [*range(len(df))]
         if sample_fraction is not None:
-            index = random.sample(self._index, int(sample_fraction * len(df)))
+            index = self.sample_random_state.sample(self._index, int(sample_fraction * len(df)))
             index = sorted(index)
             self._index = index
             self.df = df.iloc[self._index]
@@ -54,9 +54,9 @@ class DFData(EasyData):
         ixs = [*range(len(self.df))]
         self.shuffle_random_state.shuffle(ixs)
         self._index = list(np.array(self._index)[ixs])
-        self.shuffle_random_state.shuffle(self.index)
-        self.df = self.df.iloc[self.index]
+        self.df = self.df.iloc[ixs]
 
+    @property
     def ids(self) -> Iterable:
         """
         The IDs, according to the id_column attribute.
@@ -74,5 +74,3 @@ class DFData(EasyData):
 
     def __len__(self):
         return len(self.df)
-
-
