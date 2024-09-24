@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Sequence
+from typing import Any, Sequence
 
 from easyloader.datasets.base import EasyDataset
 from easyloader.common.array import sample_ixs
@@ -13,6 +13,7 @@ class ArrayDataset(EasyDataset):
 
     def __init__(self,
                  arrays: Sequence[np.ndarray],
+                 ids: Sequence[Any] = None,
                  sample_fraction: float = 1.0,
                  sample_seed: int = None,
                  shuffle: bool = False,

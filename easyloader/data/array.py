@@ -1,26 +1,26 @@
 import numpy as np
 import random
 
-from typing import Iterable
+from typing import Any, Iterable, Sequence
 
 from easyloader.data.base import EasyData
 
 
-class DFData(EasyData):
+class ArrayData(EasyData):
     """
-    Data class for DF data.
+    Data class for Array data.
     """
 
-    def __init__(self, df,
-                 id_column: str = None,
+    def __init__(self, arrays: Sequence[np.ndarray],
+                 ids: Sequence[Any] = None,
                  sample_fraction: float = None,
                  sample_seed=None,
                  shuffle_seed=None):
         """
-        Constructor for the DFData class
+        Constructor for the ArrayData class
 
-        :param df: The DF to use for the data loader.
-        :param id_column: The column to use as IDs. If not set, use the DF index.
+        :param arrays: The arrays to use for the data loader.
+        :param ids: A sequence of IDs for the array data.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
         :param shuffle_seed: The seed to be used for shuffling.
@@ -31,19 +31,24 @@ class DFData(EasyData):
                          sample_seed=sample_seed,
                          shuffle_seed=shuffle_seed)
 
-        if id_column is not None and not isinstance(id_column, str) and id_column not in df.columns:
-            raise ValueError('ID column must be a column in the DF.')
+        array_lengths = [len(arr) for arr in arrays]
+        if len(set(array_lengths)) != 1:
+            raise ValueError('Arrays must all have the same length')
 
-        self.id_column = id_column
+        self.array_length = array_lengths[0]
 
-        self._index = [*range(len(df))]
+        index = [*range(self.array_length)]
         if sample_fraction is not None:
-            index = random.sample(self._index, int(sample_fraction * len(df)))
+            index = random.sample(index, int(sample_fraction * self.array_length))
             index = sorted(index)
-            self._index = index
-            self.df = df.iloc[self._index]
+            self.arrays = [arr[index] for arr in arrays]
         else:
-            self.df = df
+            self.arrays = arrays
+
+        self._index = index
+
+        self.arrays = arrays
+        self.ids = ids
 
     def shuffle(self):
         """
@@ -51,11 +56,10 @@ class DFData(EasyData):
 
         :return: None.
         """
-        ixs = [*range(len(self.df))]
+        ixs = [*range(self.array_length)]
         self.shuffle_random_state.shuffle(ixs)
+        self.arrays = [arr[ixs] for arr in self.arrays]
         self._index = list(np.array(self._index)[ixs])
-        self.shuffle_random_state.shuffle(self.index)
-        self.df = self.df.iloc[self.index]
 
     def ids(self) -> Iterable:
         """
@@ -63,16 +67,14 @@ class DFData(EasyData):
 
         :return: The IDs
         """
-        if self.id_column is not None:
-            return self.df[self.id_column]
+        if self.ids is None:
+            return [self.ids[i] for i in self.index]
         else:
-            return self.df.index
+            return self.index
 
     @property
     def index(self):
         return self._index
 
     def __len__(self):
-        return len(self.df)
-
-
+        return self.array_length

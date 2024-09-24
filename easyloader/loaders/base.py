@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 
 from easyloader.utils.random import get_random_state
 
+
 class EasyDataLoader(DataLoader, ABC):
     """
     Interface class for EasyLoader dataloaders with common functionality for sampling and indexing.
