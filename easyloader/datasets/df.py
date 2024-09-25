@@ -14,7 +14,7 @@ class DFDataset(EasyDataset):
 
     def __init__(self,
                  df: pd.DataFrame,
-                 column_groups: Sequence[Sequence[str]],
+                 column_groups: Sequence[Sequence[str]] = None,
                  id_column: str = None,
                  sample_fraction: float = 1.0,
                  sample_seed: int = None):
@@ -33,7 +33,12 @@ class DFDataset(EasyDataset):
         super().__init__(sample_fraction=sample_fraction,
                          sample_seed=sample_seed)
 
-        self.data = DFData(df, id_column=id_column, sample_seed=sample_seed)
+        self.data = DFData(df, id_column=id_column, sample_fraction=sample_fraction, sample_seed=sample_seed)
+
+        if column_groups is None:
+            raise NotImplemented('Currently need to specify column groups')
+            # TODO: Allow specify no columns, or just "columns".
+
         self.column_groups = column_groups
 
     @property
@@ -58,4 +63,4 @@ class DFDataset(EasyDataset):
         return len(self.data)
 
     def __getitem__(self, ix: int):
-        return tuple([g.iloc[ix] for g in self.groups])
+        return tuple([self.data.df[g].iloc[ix].to_numpy() for g in self.column_groups])

@@ -27,10 +27,12 @@ class ArrayDataset(EasyDataset):
         super().__init__(sample_fraction=sample_fraction,
                          sample_seed=sample_seed)
 
+        # TODO: Allow specifying just a single array.
+
         self.data = ArrayData(arrays, ids=ids, sample_fraction=sample_fraction, sample_seed=sample_seed)
 
     def __len__(self) -> int:
-        return self.data_length
+        return len(self.data)
 
     def __getitem__(self, ix: int):
-        return tuple([arr[ix] for arr in self.arrays])
+        return tuple([arr[ix] for arr in self.data.arrays])

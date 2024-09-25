@@ -13,9 +13,9 @@ def arrays():
 
     # Use broadcasting to add consecutive numbers to each layer, for testing sampling & shuffling
     arrays = [
-        np.arange(1000).reshape(-1, 1, 1, 1) * np.ones(shape=(1, 3, 16, 16)), # Shape (1000, 3, 16, 16)
-        np.arange(1000).reshape(-1, 1) * np.ones(shape=(1, 5)),  # Shape (1000, 5)
-        np.arange(1000).reshape(-1, 1, 1) * np.ones(shape=(1, 10, 10)),  # Shape (1000, 10, 10)
+        np.arange(n_entries).reshape(-1, 1, 1, 1) * np.ones(shape=(1, 3, 16, 16)), # Shape (1000, 3, 16, 16)
+        np.arange(n_entries).reshape(-1, 1) * np.ones(shape=(1, 5)),  # Shape (1000, 5)
+        np.arange(n_entries).reshape(-1, 1, 1) * np.ones(shape=(1, 10, 10)),  # Shape (1000, 10, 10)
     ]
 
     return arrays
