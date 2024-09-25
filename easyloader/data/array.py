@@ -3,6 +3,7 @@ import numpy as np
 from typing import Any, Iterable, Sequence
 
 from easyloader.data.base import EasyData
+from easyloader.utils.random import Seedable
 
 
 class ArrayData(EasyData):
@@ -13,8 +14,8 @@ class ArrayData(EasyData):
     def __init__(self, arrays: Sequence[np.ndarray],
                  ids: Sequence[Any] = None,
                  sample_fraction: float = None,
-                 sample_seed=None,
-                 shuffle_seed=None):
+                 sample_seed: Seedable = None,
+                 shuffle_seed: Seedable = None):
         """
         Constructor for the ArrayData class
 

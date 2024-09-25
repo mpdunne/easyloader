@@ -6,6 +6,7 @@ from typing import Sequence
 from easyloader.loaders.base import EasyDataLoader
 from easyloader.data.df import DFData
 from easyloader.utils.batch import get_n_batches
+from easyloader.utils.random import Seedable
 
 
 class DFDataLoader(EasyDataLoader):
@@ -21,8 +22,8 @@ class DFDataLoader(EasyDataLoader):
                  batch_size: int = 1,
                  sample_fraction: float = None,
                  shuffle: bool = False,
-                 sample_seed: int = None,
-                 shuffle_seed: bool = None):
+                 sample_seed: Seedable = None,
+                 shuffle_seed: Seedable = None):
         """
         Constructor for the DFDataLoader class.
 
@@ -43,7 +44,8 @@ class DFDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.data = DFData(df, id_column=id_column, sample_seed=sample_seed, shuffle_seed=shuffle_seed)
+        self.data = DFData(df, id_column=id_column, sample_seed=sample_seed,
+                           sample_fraction=sample_fraction, shuffle_seed=shuffle_seed)
         self.column_groups = column_groups
 
     @property
@@ -72,12 +74,15 @@ class DFDataLoader(EasyDataLoader):
         return self
 
     def __next__(self):
-        if self.i >= len(self.data):
+        if self.i >= len(self):
             raise StopIteration
 
-        batch = tuple(torch.Tensor(self.data.df[g].iloc[self.i: self.i + self.batch_size]) for g in self.column_groups)
-        self.i += self.batch_size
+        batch = tuple(
+            torch.Tensor(self.data.df[g].iloc[self.i * self.batch_size: (self.i + 1) * self.batch_size].to_numpy())
+            for g in self.column_groups)
+
+        self.i += 1
         return batch
 
     def __len__(self) -> int:
-        return get_n_batches(self.data, self.batch_size)
+        return get_n_batches(len(self.data), self.batch_size)

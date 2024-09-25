@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Iterable
 
-from easyloader.utils.random import get_random_state
+from easyloader.utils.random import get_random_state, Seedable
 
 
 class EasyData:
@@ -11,8 +11,8 @@ class EasyData:
 
     def __init__(self,
                  sample_fraction: float = None,
-                 sample_seed=None,
-                 shuffle_seed=None):
+                 sample_seed: Seedable = None,
+                 shuffle_seed: Seedable = None):
         """
         Constructor for the Data Interface.
 

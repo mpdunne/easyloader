@@ -1,14 +1,13 @@
 import numpy as np
+
+from typing import Union, Hashable
 import random
 
-import numpy as np
 
-import random
-
-from typing import Sequence, Hashable, Union
+Seedable = Union[Hashable, random.Random, np.random.RandomState]
 
 
-def get_random_state(random_state=None):
+def get_random_state(random_state: Seedable = None):
     """
     Return a standard python random state. If the input is already one of these, just return it.
     If not, safely create a random state from the inputted random state.

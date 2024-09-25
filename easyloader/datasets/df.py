@@ -4,6 +4,7 @@ from typing import Sequence
 
 from easyloader.datasets.base import EasyDataset
 from easyloader.data.df import DFData
+from easyloader.utils.random import Seedable
 
 
 class DFDataset(EasyDataset):
@@ -17,7 +18,7 @@ class DFDataset(EasyDataset):
                  column_groups: Sequence[Sequence[str]] = None,
                  id_column: str = None,
                  sample_fraction: float = 1.0,
-                 sample_seed: int = None):
+                 sample_seed: Seedable = None):
 
         """
         Constructor for the DFDataset class.

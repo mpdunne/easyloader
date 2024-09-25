@@ -84,7 +84,7 @@ def test_shuffle_consistent(df):
         assert all((ixs == ixsc) for ixsc in ix_sets)
 
 
-def test_shuffle_changes_index(arrays):
+def test_shuffle_changes_index(df):
     data = DFData(df, shuffle_seed=8675309)
     index_orig = data.index.copy()
     data.shuffle()

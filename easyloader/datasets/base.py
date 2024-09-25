@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
 
-from easyloader.utils.random import get_random_state
+from easyloader.utils.random import Seedable
 
 
 class EasyDataset(Dataset, ABC):
@@ -10,7 +10,7 @@ class EasyDataset(Dataset, ABC):
     """
 
     def __init__(self, sample_fraction: float = 1.0,
-                 sample_seed: int = None):
+                 sample_seed: Seedable = None):
         """
         Constructor for the EasyDataset class Interface.
 

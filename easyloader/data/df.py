@@ -1,9 +1,9 @@
 import numpy as np
-import random
 
-from typing import Iterable, Sequence
+from typing import Iterable
 
 from easyloader.data.base import EasyData
+from easyloader.utils.random import Seedable
 
 
 class DFData(EasyData):
@@ -14,8 +14,8 @@ class DFData(EasyData):
     def __init__(self, df,
                  id_column: str = None,
                  sample_fraction: float = None,
-                 sample_seed=None,
-                 shuffle_seed=None):
+                 sample_seed: Seedable = None,
+                 shuffle_seed: Seedable = None):
         """
         Constructor for the DFData class
 

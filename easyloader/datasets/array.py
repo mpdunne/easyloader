@@ -4,6 +4,7 @@ from typing import Any, Sequence
 
 from easyloader.datasets.base import EasyDataset
 from easyloader.data.array import ArrayData
+from easyloader.utils.random import Seedable
 
 
 class ArrayDataset(EasyDataset):
@@ -15,7 +16,7 @@ class ArrayDataset(EasyDataset):
                  arrays: Sequence[np.ndarray],
                  ids: Sequence[Any] = None,
                  sample_fraction: float = 1.0,
-                 sample_seed: int = None):
+                 sample_seed: Seedable = None):
         """
         Constructor for the ArrayDataset class.
 
