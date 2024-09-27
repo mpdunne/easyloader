@@ -1,4 +1,4 @@
-_ = '''import h5py
+import h5py
 import random
 import numpy as np
 
@@ -18,6 +18,7 @@ class H5Dataset(EasyDataset):
     def __init__(self,
                  data_path: Union[str, Path],
                  keys: Sequence[str],
+                 id_key: str = None,
                  sample_fraction: float = 1.0,
                  sample_seed: int = None,
                  shuffle: bool = False,
@@ -34,43 +35,22 @@ class H5Dataset(EasyDataset):
         :param shuffle_seed: The seed to be used for shuffling.
         """
 
+        # Initialize the parent class
+        super().__init__(sample_fraction=sample_fraction,
+                         sample_seed=sample_seed)
 
-        data = h5py.File(data_path, "r")
-        present_keys = check_keys(data.keys(), keys, allow_missing_keys)
+        self.data = H5Data(data_path, keys, id_key=id_key, sample_fraction=sample_fraction,
+                           sample_seed=sample_seed, shuffle_seed=shuffle_seed)
 
-        if index_key is not None and index_key not in data.keys():
-            raise KeyError(f'If specified, index_key must be in the H5 dataset\'s keys. {index_key} is missing')
-
-        data_length = len(data[present_keys[0]])
-
-        self.keys = keys
-        self.data = data
-
-        if sample_fraction != 1:
-            sample_size = int(sample_fraction * data_length)
-            rng = random.Random(sample_seed)
-            self.sample = sorted(rng.sample([*range(data_length)], sample_size))
-        else:
-            self.sample = [*range(data_length)]
-
-        if shuffle:
-            self.sample = random.sample(self.sample, len(self.sample))
-
-        if index_key is not None:
-            self.index = data[index_key][self.sample]
-        else:
-            self.index = self.sample
+        self.shuffle = shuffle
 
     def __len__(self) -> int:
-        return len(self.sample)
+        return len(self.data)
 
     def __getitem__(self, index: int):
 
         values = []
-        for key in self.keys:
-            if key in self.data:
-                values.append(self.data[key][self.sample[index]])
-            else:
-                values.append(np.array([], dtype=np.float32))
+        for key in self.data.keys:
+            values.append(self.data[key][index])
 
-        return tuple(values)'''
+        return tuple(values)
