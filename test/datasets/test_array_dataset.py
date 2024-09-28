@@ -61,6 +61,20 @@ def test_can_be_inputted_to_torch_dataloader(arrays):
     DataLoader(ds)
 
 
+def test_slice_works(arrays):
+    ds = ArrayDataset(arrays)
+    slices = ds[:10]
+    assert all(len(s) == 10 for s in slices)
+    assert all((s == arr[:10]).all() for s, arr in zip(slices, arrays))
+
+
+def test_slice_works_sampled(arrays):
+    ds = ArrayDataset(arrays, sample_fraction=0.3, sample_seed=8675309)
+    slices = ds[:10]
+    assert all(len(s) == 10 for s in slices)
+    assert all(not (s == arr[:10]).all() for s, arr in zip(slices, arrays))
+
+
 def test_works_with_torch_dataloader(arrays):
     ds = ArrayDataset(arrays)
     dl = DataLoader(ds, batch_size=10)
