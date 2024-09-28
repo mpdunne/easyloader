@@ -10,7 +10,7 @@ from easyloader.datasets.df import DFDataset
 
 @pytest.fixture(scope='session')
 def df():
-    n_entries = 1000
+    n_entries = 100
     data = [
         [*range(0, n_entries)],
         [*range(0, n_entries * 10, 10)],
@@ -67,6 +67,22 @@ def test_column_groups_used(df):
     entry = ds[5]
     assert (entry[0] == df[column_groups[0]].iloc[5]).all().all()
     assert (entry[1] == df[column_groups[1]].iloc[5]).all().all()
+
+
+def test_slice_works(df):
+    column_groups = [['ones', 'tens'], ['hundreds']]
+    ds = DFDataset(df, column_groups=column_groups)
+    slices = ds[:10]
+    assert all(len(s) == 10 for s in slices)
+    assert all((s == df[g].iloc[:10]).all().all() for s, g in zip(slices, column_groups))
+
+
+def test_slice_works_sampled(df):
+    column_groups = [['ones', 'tens'], ['hundreds']]
+    ds = DFDataset(df, column_groups=column_groups, sample_fraction=0.3, sample_seed=8675309)
+    slices = ds[:10]
+    assert all(len(s) == 10 for s in slices)
+    assert all(not (s == df[g].iloc[:10]).all().all() for s, g in zip(slices, column_groups))
 
 
 def test_works_with_torch_dataloader(df):
