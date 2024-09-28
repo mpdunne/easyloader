@@ -1,7 +1,8 @@
 import h5py
 import math
 
-from typing import Iterable, Path, Sequence, Union
+from pathlib import Path
+from typing import Iterable, Sequence, Union
 
 from easyloader.data.base import EasyData
 
@@ -38,7 +39,7 @@ class H5Data(EasyData):
         self.h5 = data
 
         missing_keys = [key for key in keys if key not in data.keys()]
-        if not all():
+        if len(missing_keys) != 0:
             raise ValueError('Missing keys: ' + ', '.join(missing_keys))
         self._keys = keys
 
