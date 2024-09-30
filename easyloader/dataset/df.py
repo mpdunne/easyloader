@@ -2,7 +2,7 @@ import pandas as pd
 
 from typing import Sequence
 
-from easyloader.datasets.base import EasyDataset
+from easyloader.dataset.base import EasyDataset
 from easyloader.data.df import DFData
 from easyloader.utils.random import Seedable
 

@@ -4,7 +4,7 @@ import pytest
 from torch.utils.data import DataLoader
 from unittest.mock import patch
 
-from easyloader.datasets.array import ArrayDataset
+from easyloader.dataset.array import ArrayDataset
 
 
 @pytest.fixture(scope='session')

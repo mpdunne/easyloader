@@ -5,7 +5,7 @@ import pytest
 from copy import deepcopy
 from unittest.mock import patch
 
-from easyloader.loaders.df import DFDataLoader
+from easyloader.loader.df import DFDataLoader
 
 
 @pytest.fixture(scope='session')

@@ -4,7 +4,7 @@ import random
 
 from typing import Any, Sequence
 
-from easyloader.loaders.base import EasyDataLoader
+from easyloader.loader.base import EasyDataLoader
 from easyloader.data.array import ArrayData
 from easyloader.utils.batch import get_n_batches
 from easyloader.utils.random import Seedable

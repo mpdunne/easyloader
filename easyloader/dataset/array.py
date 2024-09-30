@@ -2,7 +2,7 @@ import numpy as np
 
 from typing import Any, Sequence
 
-from easyloader.datasets.base import EasyDataset
+from easyloader.dataset.base import EasyDataset
 from easyloader.data.array import ArrayData
 from easyloader.utils.random import Seedable
 

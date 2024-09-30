@@ -3,7 +3,7 @@ import torch
 
 from typing import Sequence
 
-from easyloader.loaders.base import EasyDataLoader
+from easyloader.loader.base import EasyDataLoader
 from easyloader.data.df import DFData
 from easyloader.utils.batch import get_n_batches
 from easyloader.utils.random import Seedable

@@ -4,7 +4,7 @@ import pytest
 from copy import deepcopy
 from unittest.mock import patch
 
-from easyloader.loaders.array import ArrayDataLoader
+from easyloader.loader.array import ArrayDataLoader
 
 
 @pytest.fixture(scope='session')
