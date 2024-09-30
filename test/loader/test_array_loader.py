@@ -33,7 +33,7 @@ def test_can_instantiate(arrays):
 
 
 def test_args_passed_to_data_class(arrays):
-    with patch('easyloader.loaders.array.ArrayData') as MockArrayData:
+    with patch('easyloader.loader.array.ArrayData') as MockArrayData:
         sample_fraction = 0.7
         sample_seed = 8675309
         shuffle_seed = 5318008
