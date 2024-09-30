@@ -5,7 +5,7 @@ import pytest
 from copy import deepcopy
 from unittest.mock import patch
 
-from easyloader.loaders.df import DFDataLoader
+from easyloader.loader.df import DFDataLoader
 
 
 @pytest.fixture(scope='session')
@@ -28,7 +28,7 @@ def test_can_instantiate(df):
 
 
 def test_args_passed_to_data_class(df):
-    with patch('easyloader.loaders.df.DFData') as MockArrayData:
+    with patch('easyloader.loader.df.DFData') as MockArrayData:
         sample_fraction = 0.7
         sample_seed = 8675309
         shuffle_seed = 5318008

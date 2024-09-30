@@ -9,7 +9,7 @@ from typing import Sequence, Union
 from uloops.loaders.common import get_n_batches
 
 
-from easyloader.loaders.base import EasyDataLoader
+from easyloader.loader.base import EasyDataLoader
 from easyloader.common.h5 import check_keys
 
 

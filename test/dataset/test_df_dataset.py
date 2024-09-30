@@ -5,7 +5,7 @@ import pytest
 from torch.utils.data import DataLoader
 from unittest.mock import patch
 
-from easyloader.datasets.df import DFDataset
+from easyloader.dataset.df import DFDataset
 
 
 @pytest.fixture(scope='session')
@@ -28,7 +28,7 @@ def test_can_instantiate(df):
 
 
 def test_args_passed_to_data_class(df):
-    with patch('easyloader.datasets.df.DFData') as MockArrayData:
+    with patch('easyloader.dataset.df.DFData') as MockArrayData:
         sample_fraction = 0.7
         sample_seed = 8675309
         id_column = 'id'

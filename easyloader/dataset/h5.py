@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 from typing import Sequence, Union
 
-from easyloader.datasets.base import EasyDataset
+from easyloader.dataset.base import EasyDataset
 from easyloader.common.h5 import check_keys
 
 
