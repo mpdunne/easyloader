@@ -1,6 +1,6 @@
 import pandas as pd
 
-from typing import Sequence
+from typing import Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.data.df import DFData
@@ -63,5 +63,5 @@ class DFDataset(EasyDataset):
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, ix: int):
+    def __getitem__(self, ix: Union[int, slice]):
         return tuple([self.data.df[g].iloc[ix].to_numpy() for g in self.column_groups])

@@ -31,11 +31,12 @@ class DFData(EasyData):
                          sample_seed=sample_seed,
                          shuffle_seed=shuffle_seed)
 
+        # Organise the IDs
         if id_column is not None and not isinstance(id_column, str) and id_column not in df.columns:
             raise ValueError('ID column must be a column in the DF.')
-
         self.id_column = id_column
 
+        # Perform sampling
         self._index = [*range(len(df))]
         if sample_fraction is not None:
             index = self.sample_random_state.sample(self._index, int(sample_fraction * len(df)))

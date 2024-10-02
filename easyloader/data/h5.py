@@ -38,16 +38,19 @@ class H5Data(EasyData):
         data = h5py.File(data_path, "r")
         self.h5 = data
 
+        # Process keys
         missing_keys = [key for key in keys if key not in data.keys()]
         if len(missing_keys) != 0:
             raise ValueError('Missing keys: ' + ', '.join(missing_keys))
         self._keys = keys
 
+        # Check lengths
         data_lengths = [len(data[key]) for key in keys]
         if len(set(data_lengths)) != 1:
             raise ValueError('All data must be the same length.')
         data_length = data_lengths[0]
 
+        # Organise the IDs
         if id_key is not None:
             if id_key not in data.keys():
                 raise ValueError(f'Specified id key {id_key} not present in H5 file.')
@@ -57,15 +60,14 @@ class H5Data(EasyData):
         else:
             self._ids = [*range(data_length)]
 
+        # Organise grains & perform sampling
         n_grains = int(math.ceil(data_length / grain_size))
         self.grain_size = grain_size
         self.n_grains = n_grains
-
         grains = [*range(n_grains)]
         if sample_fraction is not None:
             grains = self.sample_random_state.sample(grains, int(sample_fraction * n_grains))
             grains = sorted(grains)
-
         self._grain_index = grains
 
     def shuffle(self):

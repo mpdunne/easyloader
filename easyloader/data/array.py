@@ -31,12 +31,13 @@ class ArrayData(EasyData):
                          sample_seed=sample_seed,
                          shuffle_seed=shuffle_seed)
 
+        # Check lengths
         array_lengths = [len(arr) for arr in arrays]
         if len(set(array_lengths)) != 1:
             raise ValueError('Arrays must all have the same length')
-
         array_length = array_lengths[0]
 
+        # Organise the IDs
         index = [*range(array_length)]
         if ids is not None:
             if not len(ids) == array_length:
@@ -45,13 +46,13 @@ class ArrayData(EasyData):
         else:
             self._ids = index.copy()
 
+        # Perform sampling
         if sample_fraction is not None:
             index = self.sample_random_state.sample(index, int(sample_fraction * array_length))
             index = sorted(index)
             self.arrays = [arr[index] for arr in arrays]
         else:
             self.arrays = arrays
-
         self._index = index
 
     def shuffle(self):

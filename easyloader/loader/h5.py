@@ -22,8 +22,8 @@ class H5DataLoader(EasyDataLoader):
                  batch_size: int = 1,
                  grain_size: int = 1,
                  sample_fraction: float = None,
-                 sample_seed: int = None,
                  shuffle: bool = False,
+                 sample_seed: int = None,
                  shuffle_seed: bool = None):
         """
         Constructor for the H5DtaLoader class
