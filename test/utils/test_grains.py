@@ -123,6 +123,31 @@ def test_grab_slices_valid_negative_indices_are_fine(grain_index_size, grain_siz
     helper_check_grab_slices(grain_index, grain_size, ix_start, ix_stop, result)
 
 
+@pytest.mark.parametrize('grain_size,ix_start,ix_stop', (
+        (5, None, 0),
+        (5, None, 1),
+        (5, None, 5),
+        (5, None, 7),
+        (5, None, -5),
+        (5, None, -1),
+        (5, 0, None),
+        (5, 1, None),
+        (5, 5, None),
+        (5, 7, None),
+        (5, -5, None),
+        (5, -1, None),
+        (5, None, None),
+    )
+)
+@pytest.mark.parametrize('grain_index_size', (40, 80, 150, 160, 230, 420))
+def test_grab_slices_none_handled_correctly(grain_index_size, grain_size, ix_start, ix_stop):
+    grain_index = [*range(grain_index_size)]
+    rng = random.Random(8675309)
+    rng.shuffle(grain_index)
+    result = grab_slices_from_grains(grain_index, grain_size, ix_start, ix_stop)
+    helper_check_grab_slices(grain_index, grain_size, ix_start, ix_stop, result)
+
+
 @pytest.mark.parametrize('grain_index_size,grain_size,ix_start,ix_stop', (
         (100, 5, 12, 12),
         (100, 5, 15, 15),
@@ -153,7 +178,7 @@ def test_grab_slices_combinatorial():
             rng = random.Random(seed)
             rng.shuffle(grain_index)
             for grain_size in (4, 8, 15, 16, 23, 42):
-                for ix_start in range(-n_grains * 3, n_grains * 3):
-                    for ix_stop in range(-n_grains * 3, n_grains * 3):
+                for ix_start in [*range(-n_grains * 3, n_grains * 3)] + [None]:
+                    for ix_stop in [*range(-n_grains * 3, n_grains * 3)] + [None]:
                         result = grab_slices_from_grains(grain_index, grain_size, ix_start, ix_stop)
                         helper_check_grab_slices(grain_index, grain_size, ix_start, ix_stop, result)
