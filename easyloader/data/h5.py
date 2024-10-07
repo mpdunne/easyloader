@@ -1,26 +1,8 @@
-_ = '''
-def check_keys(data_keys, requested_keys, allow_missing_keys=False):
-    present_keys = []
-    missing_keys = []
-    for key in requested_keys:
-        if key in data_keys:
-            present_keys.append(key)
-        else:
-            missing_keys.append(key)
-
-    if missing_keys and not allow_missing_keys:
-        missing_key_string = ', '.join(missing_keys)
-        raise KeyError(f'The following keys are missing from the h5 file: {missing_key_string}. '
-                       'If you don\'t care, set allow_missing_keys to True.')
-
-    if not present_keys:
-        raise KeyError('None of the provided keys are present in the H5 file. Need at least one.')
-
-    return present_keys'''
-_ = '''
 import h5py
+import math
 
-from typing import Iterable, Path, Sequence, Union
+from pathlib import Path
+from typing import Iterable, Sequence, Union
 
 from easyloader.data.base import EasyData
 
@@ -56,30 +38,37 @@ class H5Data(EasyData):
         data = h5py.File(data_path, "r")
         self.h5 = data
 
+        # Process keys
         missing_keys = [key for key in keys if key not in data.keys()]
-        if not all():
+        if len(missing_keys) != 0:
             raise ValueError('Missing keys: ' + ', '.join(missing_keys))
         self._keys = keys
 
+        # Check lengths
         data_lengths = [len(data[key]) for key in keys]
         if len(set(data_lengths)) != 1:
             raise ValueError('All data must be the same length.')
         data_length = data_lengths[0]
 
+        # Organise the IDs
         if id_key is not None:
             if id_key not in data.keys():
                 raise ValueError(f'Specified id key {id_key} not present in H5 file.')
             if len(data[id_key]) != data_length:
-                raise ValueError(f'Length of data for ID key {id_key} does not match other data.')
+                raise ValueError(f'Length of data for ID key {id_key} does not match that of other data.')
             self._ids = data[id_key][:]
         else:
             self._ids = [*range(data_length)]
 
-        self._index = [*range(data_length)]
+        # Organise grains & perform sampling
+        n_grains = int(math.ceil(data_length / grain_size))
+        self.grain_size = grain_size
+        self.n_grains = n_grains
+        grains = [*range(n_grains)]
         if sample_fraction is not None:
-            index = self.sample_random_state.sample(self._index, int(sample_fraction * len(df)))
-            index = sorted(index)
-            self._index = index
+            grains = self.sample_random_state.sample(grains, int(sample_fraction * n_grains))
+            grains = sorted(grains)
+        self._grain_index = grains
 
     def shuffle(self):
         """
@@ -87,19 +76,28 @@ class H5Data(EasyData):
 
         :return: None.
         """
-        pass
+        self.shuffle_random_state.shuffle(self.grain_index)
 
+    @property
     def ids(self) -> Iterable:
         """
         The IDs.
 
         :return: The IDs
         """
-        pass
+        return [self._ids[i] for i in self.index]
 
+    @property
     def index(self):
-        pass
+        return [ix for gix in self.grain_index for ix in range(gix * self.grain_size, (gix + 1) * self.grain_size)]
+
+    @property
+    def grain_index(self):
+        return self._grain_index
+
+    @property
+    def keys(self):
+        return self._keys
 
     def __len__(self):
-        pass
-'''
+        return len(self.index)

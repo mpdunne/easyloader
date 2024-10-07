@@ -1,3 +1,5 @@
+import math
+
 
 def get_n_batches(data_length: int, batch_size: int) -> int:
     """
@@ -13,7 +15,5 @@ def get_n_batches(data_length: int, batch_size: int) -> int:
     if not (isinstance(batch_size, int) and batch_size > 0):
         raise ValueError('Batch size must be a positive integer.')
 
-    n_batches, remainder = divmod(data_length, batch_size)
-    if remainder > 0:
-        n_batches += 1
-    return n_batches
+    return int(math.ceil(data_length / batch_size))
+

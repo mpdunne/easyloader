@@ -1,12 +1,11 @@
-_ = '''import h5py
-import random
 import numpy as np
 
 from pathlib import Path
 from typing import Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
-from easyloader.common.h5 import check_keys
+from easyloader.data.h5 import H5Data
+from easyloader.utils.grains import grab_slices_from_grains
 
 
 class H5Dataset(EasyDataset):
@@ -18,10 +17,10 @@ class H5Dataset(EasyDataset):
     def __init__(self,
                  data_path: Union[str, Path],
                  keys: Sequence[str],
+                 id_key: str = None,
+                 grain_size: int = 1,
                  sample_fraction: float = 1.0,
-                 sample_seed: int = None,
-                 shuffle: bool = False,
-                 shuffle_seed: int = None):
+                 sample_seed: int = None):
 
         """
         Constructor for the H5Dataset class.
@@ -30,47 +29,32 @@ class H5Dataset(EasyDataset):
         :param keys: The keys that you want to grab.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
-        :param shuffle: Whether to shuffle the data.
-        :param shuffle_seed: The seed to be used for shuffling.
         """
 
+        # Initialize the parent class
+        super().__init__(sample_fraction=sample_fraction,
+                         sample_seed=sample_seed)
 
-        data = h5py.File(data_path, "r")
-        present_keys = check_keys(data.keys(), keys, allow_missing_keys)
-
-        if index_key is not None and index_key not in data.keys():
-            raise KeyError(f'If specified, index_key must be in the H5 dataset\'s keys. {index_key} is missing')
-
-        data_length = len(data[present_keys[0]])
-
-        self.keys = keys
-        self.data = data
-
-        if sample_fraction != 1:
-            sample_size = int(sample_fraction * data_length)
-            rng = random.Random(sample_seed)
-            self.sample = sorted(rng.sample([*range(data_length)], sample_size))
-        else:
-            self.sample = [*range(data_length)]
-
-        if shuffle:
-            self.sample = random.sample(self.sample, len(self.sample))
-
-        if index_key is not None:
-            self.index = data[index_key][self.sample]
-        else:
-            self.index = self.sample
+        self.data = H5Data(data_path, keys=keys, id_key=id_key, grain_size=grain_size,
+                           sample_fraction=sample_fraction, sample_seed=sample_seed)
 
     def __len__(self) -> int:
-        return len(self.sample)
+        return len(self.data)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, ix: Union[int, slice]):
 
         values = []
-        for key in self.keys:
-            if key in self.data:
-                values.append(self.data[key][self.sample[index]])
-            else:
-                values.append(np.array([], dtype=np.float32))
 
-        return tuple(values)'''
+        if isinstance(ix, int):
+            for key in self.data.keys:
+                values.append(self.data.h5[key][self.data.index[ix]])
+
+        elif isinstance(ix, slice):
+            ix_slices = grab_slices_from_grains(self.data.grain_index, self.data.grain_size, ix.start, ix.stop)
+            for key in self.data.keys:
+                values.append(np.concatenate([self.data.h5[key][ix_slice] for ix_slice in ix_slices]))
+
+        else:
+            raise ValueError('Index ix must either be an int or a slice.')
+
+        return tuple(values)
