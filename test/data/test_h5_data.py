@@ -11,14 +11,15 @@ from easyloader.data.h5 import H5Data
 def h5_file(scope='module'):
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = os.path.join(temp_dir, "test.h5")
+        data_length = 100
 
         # Open the HDF5 file in write mode
         with h5py.File(file_path, 'w') as h5file:
             # First dimension is consistent across all datasets, other dimensions vary
-            h5file.create_dataset("key_1", data=np.random.rand(100, 10))
-            h5file.create_dataset("key_2", data=np.random.rand(100, 5, 3))
-            h5file.create_dataset("key_3", data=np.random.rand(100, 20))
-            h5file.create_dataset("id_key", data=np.random.rand(100, ))
+            h5file.create_dataset("key_1", data=np.random.rand(data_length, 10))
+            h5file.create_dataset("key_2", data=np.random.rand(data_length, 5, 3))
+            h5file.create_dataset("key_3", data=np.random.rand(data_length, 20))
+            h5file.create_dataset("id_key", data=np.array([*range(data_length)]))
 
         # Yield the file path for use in tests
         yield file_path
@@ -68,27 +69,21 @@ def test_missing_keys_throws_error(h5_file):
     'sample_seed', (8675309, None)
 )
 def test_not_sampled_if_not_asked(h5_file, sample_seed):
-    keys = ['key1', 'key2']
+    keys = ['key_1', 'key_2']
     data = H5Data(h5_file, keys=keys, sample_seed=sample_seed)
     h5 = h5py.File(h5_file)
-    arrays = data.
-
-
-    expected_arrays = [h5[key][:] for key in keys]
-    for key, expected_array in zip(data.arrays, expected_data):
-        assert (array == original_array).all()
+    assert data.index == [*range(len(h5[keys[0]]))]
 
 
 @pytest.mark.parametrize(
     'sample_seed', (8675309, None)
 )
-def test_sampled_correct_length_and_ordered(df, sample_seed):
-    # No seed, but a sample fraction.
-    original_df = df.copy()
-    data = DFData(df, sample_seed=sample_seed, sample_fraction=0.7)
-    assert len(data.df) == len(data) == len(original_df) * 0.7
-    ixs = list(data.df.index)
-    assert all(ixs[i] <= ixs[i + 1] for i in range(len(ixs) - 1))
+def test_sampled_correct_length_and_ordered(h5_file, sample_seed):
+    keys = ['key_1', 'key_2']
+    data = H5Data(h5_file, keys=keys, sample_seed=sample_seed, sample_fraction=0.7)
+    h5 = h5py.File(h5_file)
+    assert len(data.index) == len(h5[keys[0]]) * 0.7
+    assert all(data.index[i] < data.index[i + 1] for i in range(len(data.index) - 1))
 
 
 @pytest.mark.parametrize(
@@ -100,63 +95,66 @@ def test_sampled_correct_length_and_ordered(df, sample_seed):
             (None, False),
     )
 )
-def test_sampled_consistent(df, seed, consistent):
-    data = DFData(df, sample_seed=seed, sample_fraction=0.7)
-    ix_sets = [list(data.df.index)]
+def test_sampled_consistent(h5_file, seed, consistent):
+    keys = ['key_1', 'key_2']
+    data = H5Data(h5_file, keys=keys, sample_seed=seed, sample_fraction=0.7)
+    ix_sets = [list(data.index)]
     for _ in range(4):
-        data = DFData(df, sample_seed=seed, sample_fraction=0.7)
-        ixs = list(data.df.index)
+        data = H5Data(h5_file, keys=keys, sample_seed=seed, sample_fraction=0.7)
+        ixs = list(data.index)
         assert all((ixs == ixsc) == consistent for ixsc in ix_sets)
         ix_sets.append(ixs)
 
 
-def test_shuffle_works(df):
-    df_orig = df.copy()
-    data = DFData(df, shuffle_seed=8675309)
-    assert (data.df.index == df_orig.index).all().all()
-    assert (data.df == df_orig).all().all()
+def test_shuffle_works(h5_file):
+    keys = ['key_1', 'key_2']
+    data = H5Data(h5_file, keys=keys, shuffle_seed=8675309)
+    h5_orig = h5py.File(h5_file)
+    unshuffled_index = [*range(len(h5_orig[keys[0]]))]
+    assert (data.index == unshuffled_index)
     data.shuffle()
-    assert not (data.df.index == df_orig.index).all().all()
-    assert set(data.df.index) == set(df_orig.index)
-    assert len(data.df) == len(df_orig)
+    assert not (data.index == unshuffled_index)
+    assert len(data) == len(unshuffled_index)
 
 
-def test_shuffle_consistent(df):
-    data = DFData(df, shuffle_seed=8675309)
-    ix_sets = [list(data.df.index)]
+def test_shuffle_consistent(h5_file):
+    keys = ['key_1', 'key_2']
+    data = H5Data(h5_file, keys=keys, shuffle_seed=8675309)
+    h5_orig = h5py.File(h5_file)
+    ix_sets = [list(data.index)]
     for _ in range(4):
-        data = DFData(df, shuffle_seed=8675309)
-        ixs = list(data.df.index)
+        data = H5Data(h5_file, keys=keys, shuffle_seed=8675309)
+        ixs = list(data.index)
         assert all((ixs == ixsc) for ixsc in ix_sets)
 
 
-def test_shuffle_changes_index(df):
-    data = DFData(df, shuffle_seed=8675309)
+def test_shuffle_changes_index(h5_file):
+    keys = ['key_1', 'key_2']
+    data = H5Data(h5_file, keys=keys, shuffle_seed=8675309)
     index_orig = data.index.copy()
     data.shuffle()
     assert data.index != index_orig
     assert sorted(data.index) == sorted(index_orig)
 
 
-def test_ids_specified(df):
-    data = DFData(df, shuffle_seed=8675309, id_column='id')
-    assert (data.ids == df['id']).all()
+def test_id_key_specified(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Data(h5_file, keys=keys, id_key=id_key, shuffle_seed=8675309)
+    h5 = h5py.File(h5_file)
+    assert (data.ids == h5[id_key][:]).all()
 
 
-def test_ids_unspecified(df):
-    data = DFData(df, shuffle_seed=8675309)
-    assert (data.ids == data.df.index).all()
+def test_id_key_unspecified(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Data(h5_file, keys=keys, id_key=id_key, shuffle_seed=8675309)
+    assert data.ids == [*range(len(data))]
 
 
-def test_shuffle_changes_ids(df):
-    data = DFData(df, shuffle_seed=8675309, id_column='id')
+def test_shuffle_changes_ids(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Data(h5_file, keys=keys, id_key=id_key, shuffle_seed=8675309)
     data.shuffle()
     assert list(data.ids) != sorted(list(data.ids))
-
-
-def test_duplicate_ixs_okay(df):
-    double_df = pd.concat([df, df])
-    data = DFData(double_df, shuffle_seed=8675309, id_column='id', sample_fraction=0.7)
-    assert len(data.df) == 0.7 * len(double_df)
-    data.shuffle()
-    assert len(data.df) == 0.7 * len(double_df)

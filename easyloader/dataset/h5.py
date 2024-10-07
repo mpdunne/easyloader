@@ -36,7 +36,8 @@ class H5Dataset(EasyDataset):
         super().__init__(sample_fraction=sample_fraction,
                          sample_seed=sample_seed)
 
-        self.data = H5Data(data_path, keys, id_key=id_key, grain_size=grain_size, sample_fraction=sample_fraction)
+        self.data = H5Data(data_path, keys=keys, id_key=id_key, grain_size=grain_size,
+                           sample_fraction=sample_fraction, sample_seed=sample_seed)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -50,7 +51,7 @@ class H5Dataset(EasyDataset):
                 values.append(self.data.h5[key][self.data.index[ix]])
 
         elif isinstance(ix, slice):
-            ix_slices = grab_slices_from_grains(self.data.grain_index, self.data.grain_size, slice.start, slice.stop)
+            ix_slices = grab_slices_from_grains(self.data.grain_index, self.data.grain_size, ix.start, ix.stop)
             for key in self.data.keys:
                 values.append(np.concatenate([self.data.h5[key][ix_slice] for ix_slice in ix_slices]))
 
