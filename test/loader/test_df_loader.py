@@ -28,7 +28,7 @@ def test_can_instantiate(df):
 
 
 def test_args_passed_to_data_class(df):
-    with patch('easyloader.loader.df.DFData') as MockArrayData:
+    with patch('easyloader.loader.df.DFData') as MockDFData:
         sample_fraction = 0.7
         sample_seed = 8675309
         shuffle_seed = 5318008
@@ -36,7 +36,7 @@ def test_args_passed_to_data_class(df):
         column_groups = [['ones', 'tens'], ['hundreds']]
         DFDataLoader(df, column_groups=column_groups, id_column=id_column, shuffle_seed=shuffle_seed,
                      sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockArrayData.assert_called_once_with(df, id_column=id_column, shuffle_seed=shuffle_seed,
+        MockDFData.assert_called_once_with(df, id_column=id_column, shuffle_seed=shuffle_seed,
                                               sample_fraction=sample_fraction, sample_seed=sample_seed)
 
 
@@ -110,8 +110,8 @@ def test_sample_consistent(df):
     dl1_batch1 = deepcopy(next(iter(dl1)))
     dl2 = DFDataLoader(df, column_groups=column_groups, batch_size=batch_size, sample_fraction=0.7, sample_seed=4)
     dl2_batch1 = deepcopy(next(iter(dl2)))
-    for subbatch1, subbatch1 in zip(dl1_batch1, dl2_batch1):
-        assert (subbatch1 == subbatch1).all().all()
+    for subbatch1, subbatch2 in zip(dl1_batch1, dl2_batch1):
+        assert (subbatch1 == subbatch2).all().all()
 
 
 def test_len_is_n_batches(df):

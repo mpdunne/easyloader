@@ -33,15 +33,15 @@ def test_can_instantiate(h5_file):
 
 
 def test_args_passed_to_data_class(h5_file):
-    with patch('easyloader.dataset.h5.H5Data') as MockArrayData:
+    with patch('easyloader.dataset.h5.H5Data') as MockH5Data:
         sample_fraction = 0.7
         sample_seed = 8675309
         id_key = 'id_key'
         keys = ['key_1', 'key_2']
         H5Dataset(h5_file, keys=keys, id_key=id_key, grain_size=5,
                   sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockArrayData.assert_called_once_with(h5_file, keys=keys, id_key=id_key, grain_size=5,
-                                              sample_fraction=sample_fraction, sample_seed=sample_seed,)
+        MockH5Data.assert_called_once_with(h5_file, keys=keys, id_key=id_key, grain_size=5,
+                                              sample_fraction=sample_fraction, sample_seed=sample_seed)
 
 
 def test_can_get_item(h5_file):
@@ -87,7 +87,7 @@ def test_slice_works_sampled(h5_file):
 
 def test_works_with_torch_dataloader(h5_file):
     keys = ['key_1', 'key_2']
-    ds = H5Dataset(h5_file, keys=keys, sample_fraction=0.3, sample_seed=8675309)
+    ds = H5Dataset(h5_file, keys=keys)
     dl = DataLoader(ds, batch_size=10)
     h5 = h5py.File(h5_file)
     entries = next(iter(dl))
@@ -99,7 +99,8 @@ def test_works_with_torch_dataloader(h5_file):
 
 def test_shuffle_works_with_torch_dataloader(h5_file):
     keys = ['key_1', 'key_2']
-    ds = H5Dataset(h5_file, keys=keys, sample_fraction=0.3, sample_seed=8675309)
+    ds = H5Dataset(h5_file, keys=keys)
     dl = DataLoader(ds, shuffle=True, batch_size=1000000)
+    h5 = h5py.File(h5_file)
     all_entries = next(iter(dl))
     assert all(not (entry.numpy() == h5[k][:]).all().all() for entry, k in zip(all_entries, keys))

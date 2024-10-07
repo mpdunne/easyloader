@@ -28,14 +28,14 @@ def test_can_instantiate(df):
 
 
 def test_args_passed_to_data_class(df):
-    with patch('easyloader.dataset.df.DFData') as MockArrayData:
+    with patch('easyloader.dataset.df.DFData') as MockDFData:
         sample_fraction = 0.7
         sample_seed = 8675309
         id_column = 'id'
         column_groups = [['ones', 'tens'], ['hundreds']]
         DFDataset(df, column_groups=column_groups, id_column=id_column,
                   sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockArrayData.assert_called_once_with(df, id_column=id_column,
+        MockDFData.assert_called_once_with(df, id_column=id_column,
                                               sample_fraction=sample_fraction, sample_seed=sample_seed,)
 
 
