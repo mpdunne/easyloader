@@ -27,21 +27,170 @@ def h5_file(scope='module'):
         yield file_path
 
 
+@pytest.fixture
+def h5_file_jagged():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = os.path.join(temp_dir, "test_data_consistent_first_dim.h5")
+
+        n_entries = 1000
+
+        # Open the HDF5 file in write mode
+        with h5py.File(file_path, 'w') as h5file:
+            # First dimension is consistent across all datasets, other dimensions vary
+            h5file.create_dataset("key_1", data=np.arange(n_entries).reshape(-1, 1, 1, 1) * np.ones(shape=(1, 3, 16, 16)))
+            h5file.create_dataset("key_2", data=np.arange(n_entries).reshape(-1, 1) * np.ones(shape=(1, 5)))
+            h5file.create_dataset("key_3", data=np.arange(n_entries).reshape(-1, 1, 1) * np.ones(shape=(1, 10, 10)))
+            h5file.create_dataset("id_key", data=np.random.rand(n_entries, ))
+
+        np.arange(n_entries).reshape(-1, 1, 1, 1) * np.ones(shape=(1, 3, 16, 16)), # Shape (1000, 3, 16, 16)
+        np.arange(n_entries).reshape(-1, 1) * np.ones(shape=(1, 5)),  # Shape (1000, 5)
+        np.arange(n_entries).reshape(-1, 1, 1) * np.ones(shape=(1, 10, 10)),  # Shape (1000, 10, 10)
+
+        # Yield the file path for use in tests
+        yield file_path
+
+
 def test_can_instantiate(h5_file):
     keys = ['key_1', 'key_2']
     H5Dataset(h5_file, keys=keys)
 
 
-def test_args_passed_to_data_class(h5_file):
-    with patch('easyloader.dataset.h5.H5Data') as MockH5Data:
-        sample_fraction = 0.7
-        sample_seed = 8675309
-        id_key = 'id_key'
-        keys = ['key_1', 'key_2']
-        H5Dataset(h5_file, keys=keys, id_key=id_key, grain_size=5,
-                  sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockH5Data.assert_called_once_with(h5_file, keys=keys, id_key=id_key, grain_size=5,
-                                              sample_fraction=sample_fraction, sample_seed=sample_seed)
+def test_cant_instantiate_without_keys(h5_file):
+    with pytest.raises(TypeError):
+        _ = H5Dataset(h5_file)
+
+    with pytest.raises(ValueError):
+        _ = H5Dataset(h5_file, keys=[])
+
+
+def test_missing_keys_throws_error(h5_file):
+    with pytest.raises(ValueError):
+        _ = H5Dataset(h5_file, keys=['sausage'])
+
+
+@pytest.mark.parametrize(
+    'sample_seed', (8675309, None)
+)
+def test_not_sampled_if_not_asked(h5_file, sample_seed):
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, sample_seed=sample_seed)
+    h5 = h5py.File(h5_file)
+    assert data.index == [*range(len(h5[keys[0]]))]
+
+
+@pytest.mark.parametrize(
+    'sample_seed', (8675309, None)
+)
+def test_sampled_correct_length_and_ordered(h5_file, sample_seed):
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, sample_seed=sample_seed, sample_fraction=0.7)
+    h5 = h5py.File(h5_file)
+    assert len(data.index) == len(h5[keys[0]]) * 0.7
+    assert all(data.index[i] < data.index[i + 1] for i in range(len(data.index) - 1))
+
+
+@pytest.mark.parametrize(
+    'seed,consistent',
+    (
+            (1, True),
+            ('sausage', True),
+            ((1, 2, 3), True),
+            (None, False),
+    )
+)
+def test_sampled_consistent(h5_file, seed, consistent):
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, sample_seed=seed, sample_fraction=0.7)
+    ix_sets = [list(data.index)]
+    for _ in range(4):
+        data = H5Dataset(h5_file, keys=keys, sample_seed=seed, sample_fraction=0.7)
+        ixs = list(data.index)
+        assert all((ixs == ixsc) == consistent for ixsc in ix_sets)
+        ix_sets.append(ixs)
+
+
+def test_shuffle_works(h5_file):
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, shuffle_seed=8675309)
+    h5_orig = h5py.File(h5_file)
+    unshuffled_index = [*range(len(h5_orig[keys[0]]))]
+    assert (data.index == unshuffled_index)
+    data.shuffle()
+    assert not (data.index == unshuffled_index)
+    assert len(data) == len(unshuffled_index)
+
+
+def test_shuffle_consistent(h5_file):
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, shuffle_seed=8675309)
+    h5_orig = h5py.File(h5_file)
+    ix_sets = [list(data.index)]
+    for _ in range(4):
+        data = H5Dataset(h5_file, keys=keys, shuffle_seed=8675309)
+        ixs = list(data.index)
+        assert all((ixs == ixsc) for ixsc in ix_sets)
+
+
+def test_shuffle_changes_index(h5_file):
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, shuffle_seed=8675309)
+    index_orig = data.index.copy()
+    data.shuffle()
+    assert data.index != index_orig
+    assert sorted(data.index) == sorted(index_orig)
+
+
+def test_id_key_unspecified(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+    assert data.ids == [*range(len(data))]
+
+
+def test_id_key_specified(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+    h5 = h5py.File(h5_file)
+    assert (data.ids == h5[id_key][:]).all()
+
+
+def test_id_key_specified_bad(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'monkey'
+    with pytest.raises(ValueError):
+        H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+
+
+def test_ids_specified_wrong_type(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 4
+    with pytest.raises(TypeError):
+        H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+
+
+def test_ids_specified_as_list(h5_file):
+    keys = ['key_1', 'key_2']
+    h5 = h5py.File(h5_file)
+    ids = [f'ix_{i}' for i in range(len(h5[keys[0]]))]
+    data = H5Dataset(h5_file, keys=keys, ids=ids, shuffle_seed=8675309)
+    assert (data.ids == ids)
+
+
+def test_ids_specified_as_list_wrong_size(h5_file):
+    keys = ['key_1', 'key_2']
+    h5 = h5py.File(h5_file)
+    ids = [f'ix_{i}' for i in range(len(h5[keys[0]]) - 1)]
+    with pytest.raises(ValueError):
+        H5Dataset(h5_file, keys=keys, ids=ids, shuffle_seed=8675309)
+
+
+def test_shuffle_changes_ids(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+    data.shuffle()
+    assert list(data.ids) != sorted(list(data.ids))
 
 
 def test_can_get_item(h5_file):

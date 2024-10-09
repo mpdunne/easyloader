@@ -1,13 +1,18 @@
 from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader
 
+from easyloader.dataset.base import EasyDataset
 from easyloader.utils.random import Seedable
+from easyloader.utils.batch import get_n_batches
 
 
 class EasyDataLoader(DataLoader, ABC):
     """
     Interface class for EasyLoader dataloaders with common functionality for sampling and indexing.
     """
+
+    # This must be set by the child class.
+    dataset: EasyDataset
 
     def __init__(self,
                  batch_size: int = 1,
@@ -27,23 +32,52 @@ class EasyDataLoader(DataLoader, ABC):
 
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.sample_fraction = sample_fraction
+        self.sample_seed = sample_seed
+        self.shuffle_seed = shuffle_seed
 
-    @abstractmethod
+    @property
     def index(self):
-        pass
+        """
+        The numeric indices of the underlying data, relative to the inputted one.
 
-    @abstractmethod
+        :return: The indices.
+        """
+        return self.dataset.index
+
+    @property
     def ids(self):
-        pass
+        """
+        The IDs, according to the id_key attribute.
 
-    @abstractmethod
+        :return: The IDs
+        """
+        return self.dataset.ids
+
     def __iter__(self):
-        pass
+        """
+        Shuffle the underlying data set.
+
+        """
+        if self.shuffle:
+            self.dataset.shuffle()
+
+        self.i = 0
+        return self
 
     @abstractmethod
     def __next__(self):
+        """
+        Get the next batch.
+
+        :return: The next batch.
+        """
         pass
 
-    @abstractmethod
     def __len__(self) -> int:
-        pass
+        """
+        The length of the loader, i.e. the number of batches.
+
+        :return: The total number of batches.
+        """
+        return get_n_batches(len(self.dataset), self.batch_size)

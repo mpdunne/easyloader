@@ -1,6 +1,8 @@
+import copy
 import numpy as np
 import pytest
 
+from copy import deepcopy
 from torch.utils.data import DataLoader
 from unittest.mock import patch
 
@@ -32,14 +34,114 @@ def test_can_instantiate(arrays):
     ArrayDataset(arrays)
 
 
-def test_args_passed_to_data_class(arrays):
-    with patch('easyloader.dataset.array.ArrayData') as MockArrayData:
-        sample_fraction = 0.7
-        sample_seed = 8675309
-        ids = [f'i_{i}' for i in range(len(arrays[0]))]
-        ArrayDataset(arrays, sample_fraction=sample_fraction, sample_seed=sample_seed, ids=ids)
-        MockArrayData.assert_called_once_with(arrays, ids=ids,
-                                              sample_fraction=sample_fraction, sample_seed=sample_seed,)
+def test_uneven_sized_arrays_throws_error():
+    arrays = [
+        np.ones(shape=(100, 3)),
+        np.ones(shape=(99, 3)),
+    ]
+    with pytest.raises(ValueError):
+        ArrayDataset(arrays)
+
+
+@pytest.mark.parametrize(
+    'sample_seed', (8675309, None)
+)
+def test_not_sampled_if_not_asked(arrays, sample_seed):
+    original_arrays = copy.deepcopy(arrays)
+    data = ArrayDataset(arrays, sample_seed=sample_seed)
+    for array, original_array in zip(data.arrays, original_arrays):
+        assert (array == original_array).all()
+
+
+@pytest.mark.parametrize(
+    'sample_seed', (8675309, None)
+)
+def test_sampled_correct_length_and_ordered(arrays, sample_seed):
+    # No seed, but a sample fraction.
+    original_arrays = copy.deepcopy(arrays)
+    data = ArrayDataset(arrays, sample_fraction=0.7, sample_seed=sample_seed)
+    for array, original_array in zip(data.arrays, original_arrays):
+        assert array.shape[1:] == original_array.shape[1:]
+        assert len(array) == len(data) == len(original_array) * 0.7
+        assert all((array[i] <= array[i + 1]).all() for i in range(len(array) - 1))
+
+
+@pytest.mark.parametrize(
+    'seed,consistent',
+    (
+            (1, True),
+            ('sausage', True),
+            ((1, 2, 3), True),
+            (None, False),
+    )
+)
+def test_sampled_consistent(arrays, seed, consistent):
+    data = ArrayDataset(arrays, sample_fraction=0.7, sample_seed=seed)
+    ix_sets = [list(data.index)]
+    for _ in range(4):
+        data = ArrayDataset(arrays, sample_fraction=0.7, sample_seed=seed)
+        ixs = list(data.index)
+        assert all((ixs == ixsc) == consistent for ixsc in ix_sets)
+        ix_sets.append(ixs)
+
+
+def test_shuffle_works(arrays):
+    data = ArrayDataset(arrays)
+    data.shuffle()
+    for array_original, array_new in zip(arrays, data.arrays):
+        helper_check_shuffled_arrays_equal(array_original, array_new)
+        assert array_original.shape == array_new.shape
+        assert not (array_original == array_new).all()
+
+
+def test_shuffle_consistent(arrays):
+    data = ArrayDataset(arrays, shuffle_seed=8675309)
+    data.shuffle()
+    array_sets_first = deepcopy(data.arrays)
+    for _ in range(4):
+        data = ArrayDataset(arrays, shuffle_seed=8675309)
+        data.shuffle()
+        assert all((arr == arr_first).all() for arr, arr_first in zip(data.arrays, array_sets_first))
+
+
+def test_shuffle_changes_index(arrays):
+    data = ArrayDataset(arrays)
+    index_orig = data.index.copy()
+    data.shuffle()
+    assert data.index != index_orig
+    assert sorted(data.index) == sorted(index_orig)
+
+
+def test_ids_unspecified(arrays):
+    data = ArrayDataset(arrays)
+    assert len(data.ids) == len(arrays[0])
+
+
+def test_ids_specified(arrays):
+    ids = [f'entry{i}' for i in range(len(arrays[0]))]
+    data = ArrayDataset(arrays, ids=ids)
+    assert ids == data.ids
+
+
+def test_ids_specified_too_short(arrays):
+    ids = [f'entry{i}' for i in range(len(arrays[0]) - 1)]
+    with pytest.raises(ValueError):
+        ArrayDataset(arrays, ids=ids)
+
+
+def test_ids_specified_wrong_type(arrays):
+    ids = 4
+    with pytest.raises(TypeError):
+        ArrayDataset(arrays, ids=ids)
+
+
+def test_shuffle_changes_ids(arrays):
+    ids = [f'entry{i}' for i in range(len(arrays[0]))]
+    data = ArrayDataset(arrays, ids=ids)
+    ids_orig = data.ids.copy()
+    data.shuffle()
+    assert data.ids != ids_orig
+    assert sorted(data.ids) == sorted(ids_orig)
 
 
 def test_can_get_item(arrays):

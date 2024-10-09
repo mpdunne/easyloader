@@ -1,12 +1,10 @@
 import numpy as np
 import torch
-import random
 
 from typing import Any, Sequence
 
 from easyloader.loader.base import EasyDataLoader
-from easyloader.data.array import ArrayData
-from easyloader.utils.batch import get_n_batches
+from easyloader.dataset.array import ArrayDataset
 from easyloader.utils.random import Seedable
 
 
@@ -41,44 +39,21 @@ class ArrayDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.data = ArrayData(arrays, ids=ids, sample_fraction=sample_fraction,
-                              sample_seed=sample_seed, shuffle_seed=shuffle_seed)
-
-    @property
-    def index(self):
-        """
-        The numeric indices of the underlying DF, relative to the inputted one.
-
-        :return: The indices.
-        """
-        return self.data.index
-
-    @property
-    def ids(self):
-        """
-        The IDs, according to the id_column attribute.
-
-        :return: The IDs
-        """
-        return self.data.ids
-
-    def __iter__(self):
-        if self.shuffle:
-            self.data.shuffle()
-
-        self.i = 0
-        return self
+        self.dataset = ArrayDataset(arrays, ids=ids, sample_fraction=sample_fraction,
+                                    sample_seed=sample_seed, shuffle_seed=shuffle_seed)
 
     def __next__(self):
+        """
+        Get the next batch.
+
+        :return: The next batch.
+        """
         if self.i >= len(self):
             raise StopIteration
 
         batch = tuple(
             torch.Tensor(arr[self.i * self.batch_size: (self.i + 1) * self.batch_size])
-            for arr in self.data.arrays)
+            for arr in self.dataset.arrays)
 
         self.i += 1
         return batch
-
-    def __len__(self) -> int:
-        return get_n_batches(len(self.data), self.batch_size)
