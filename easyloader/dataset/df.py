@@ -82,4 +82,9 @@ class DFDataset(EasyDataset):
         self.df = self.df.iloc[ixs]
 
     def __getitem__(self, ix: Union[int, slice]):
+        """
+        Get items, either by a single index or by a slice.
+
+        :return: A subset of items.
+        """
         return tuple([self.df[g].iloc[ix].to_numpy() for g in self.column_groups])

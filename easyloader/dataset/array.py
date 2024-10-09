@@ -57,7 +57,7 @@ class ArrayDataset(EasyDataset):
 
     def shuffle(self):
         """
-        Shuffle the underlying DF.
+        Shuffle the underlying arrays.
 
         :return: None.
         """
@@ -66,8 +66,10 @@ class ArrayDataset(EasyDataset):
         self.arrays = [arr[ixs] for arr in self.arrays]
         self._index = list(np.array(self._index)[ixs])
 
-    def __len__(self) -> int:
-        return len(self.arrays[0])
-
     def __getitem__(self, ix: Union[int, slice]):
+        """
+        Get items, either by a single index or by a slice.
+
+        :return: A subset of items.
+        """
         return tuple([arr[ix] for arr in self.arrays])

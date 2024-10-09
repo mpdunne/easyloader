@@ -91,18 +91,37 @@ class H5Dataset(EasyDataset):
 
     @property
     def index(self):
+        """
+        The index, relative to the original data.
+
+        :return: The index.
+        """
         return [ix for gix in self.grain_index for ix in range(gix * self.grain_size, (gix + 1) * self.grain_size)]
 
     @property
     def grain_index(self):
+        """
+        The grain index.
+
+        :return: The grain index.
+        """
         return self._grain_index
 
     @property
-    def keys(self):
+    def keys(self) -> Sequence[str]:
+        """
+        The specified keys that we want to get out of the H5.
+
+        :return: The keys.
+        """
         return self._keys
 
     def __getitem__(self, ix: Union[int, slice]):
+        """
+        Get items, either by a single index or by a slice.
 
+        :return: A subset of items.
+        """
         values = []
 
         if isinstance(ix, int):
