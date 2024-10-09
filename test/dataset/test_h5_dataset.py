@@ -140,6 +140,13 @@ def test_shuffle_changes_index(h5_file):
     assert sorted(data.index) == sorted(index_orig)
 
 
+def test_id_key_unspecified(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 'id_key'
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+    assert data.ids == [*range(len(data))]
+
+
 def test_id_key_specified(h5_file):
     keys = ['key_1', 'key_2']
     id_key = 'id_key'
@@ -148,11 +155,34 @@ def test_id_key_specified(h5_file):
     assert (data.ids == h5[id_key][:]).all()
 
 
-def test_id_key_unspecified(h5_file):
+def test_id_key_specified_bad(h5_file):
     keys = ['key_1', 'key_2']
-    id_key = 'id_key'
-    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
-    assert data.ids == [*range(len(data))]
+    id_key = 'monkey'
+    with pytest.raises(ValueError):
+        H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+
+
+def test_ids_specified_wrong_type(h5_file):
+    keys = ['key_1', 'key_2']
+    id_key = 4
+    with pytest.raises(TypeError):
+        H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
+
+
+def test_ids_specified_as_list(h5_file):
+    keys = ['key_1', 'key_2']
+    h5 = h5py.File(h5_file)
+    ids = [f'ix_{i}' for i in range(len(h5[keys[0]]))]
+    data = H5Dataset(h5_file, keys=keys, ids=ids, shuffle_seed=8675309)
+    assert (data.ids == ids)
+
+
+def test_ids_specified_as_list_wrong_size(h5_file):
+    keys = ['key_1', 'key_2']
+    h5 = h5py.File(h5_file)
+    ids = [f'ix_{i}' for i in range(len(h5[keys[0]]) - 1)]
+    with pytest.raises(ValueError):
+        H5Dataset(h5_file, keys=keys, ids=ids, shuffle_seed=8675309)
 
 
 def test_shuffle_changes_ids(h5_file):

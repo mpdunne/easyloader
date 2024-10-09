@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from torch.utils.data import Dataset, Hashable, Sequence
-from typing import Iterable, Union
+from torch.utils.data import Dataset
+from typing import Hashable, Sequence, Iterable, Union
 
 from easyloader.utils.random import get_random_state, Seedable
 

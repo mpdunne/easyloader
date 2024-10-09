@@ -112,15 +112,27 @@ def test_shuffle_changes_index(arrays):
     assert sorted(data.index) == sorted(index_orig)
 
 
+def test_ids_unspecified(arrays):
+    data = ArrayDataset(arrays)
+    assert len(data.ids) == len(arrays[0])
+
+
 def test_ids_specified(arrays):
     ids = [f'entry{i}' for i in range(len(arrays[0]))]
     data = ArrayDataset(arrays, ids=ids)
     assert ids == data.ids
 
 
-def test_ids_unspecified(arrays):
-    data = ArrayDataset(arrays)
-    assert len(data.ids) == len(arrays[0])
+def test_ids_specified_too_short(arrays):
+    ids = [f'entry{i}' for i in range(len(arrays[0]) - 1)]
+    with pytest.raises(ValueError):
+        ArrayDataset(arrays, ids=ids)
+
+
+def test_ids_specified_wrong_type(arrays):
+    ids = 4
+    with pytest.raises(TypeError):
+        ArrayDataset(arrays, ids=ids)
 
 
 def test_shuffle_changes_ids(arrays):

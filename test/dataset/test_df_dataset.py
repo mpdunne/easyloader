@@ -95,14 +95,35 @@ def test_shuffle_changes_index(df):
     assert sorted(data.index) == sorted(index_orig)
 
 
-def test_ids_specified(df):
+def test_ids_unspecified(df):
+    data = DFDataset(df, shuffle_seed=8675309)
+    assert (data.ids == data.df.index).all()
+
+
+def test_ids_specified_as_column(df):
     data = DFDataset(df, shuffle_seed=8675309, ids='id')
     assert (data.ids == df['id']).all()
 
 
-def test_ids_unspecified(df):
-    data = DFDataset(df, shuffle_seed=8675309)
-    assert (data.ids == data.df.index).all()
+def test_ids_specified_as_column_bad(df):
+    with pytest.raises(ValueError):
+        data = DFDataset(df, shuffle_seed=8675309, ids='sausage')
+
+
+def test_ids_specified_as_list(df):
+    ids = [f'ix_{i}' for i in range(len(df))]
+    data = DFDataset(df, shuffle_seed=8675309, ids=ids)
+    assert data.ids == ids
+
+
+def test_ids_specified_as_list_wrong_size(df):
+    with pytest.raises(ValueError):
+        DFDataset(df, shuffle_seed=8675309, ids=[f'ix_{i}' for i in range(len(df) - 1)])
+
+
+def test_ids_specified_wrong_type(df):
+    with pytest.raises(TypeError):
+        DFDataset(df, shuffle_seed=8675309, ids=5)
 
 
 def test_shuffle_changes_ids(df):

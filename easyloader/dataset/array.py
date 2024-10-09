@@ -40,10 +40,9 @@ class ArrayDataset(EasyDataset):
         array_length = array_lengths[0]
 
         # Organise the IDs
-        # TODO: Add tests
         index = [*range(array_length)]
         if ids is not None:
-            if not len(ids) == array_length:
+            if len(ids) != array_length:
                 raise ValueError('ID list must be the same length as the arrays.')
             self._ids = ids
         else:

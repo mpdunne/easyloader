@@ -38,7 +38,6 @@ class DFDataset(EasyDataset):
                          shuffle_seed=shuffle_seed)
 
         # Organise the IDs
-        # TODO: Add tests
         if ids is not None:
             if isinstance(ids, str):
                 if ids not in df.columns:

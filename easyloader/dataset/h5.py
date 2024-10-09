@@ -56,7 +56,6 @@ class H5Dataset(EasyDataset):
         data_length = data_lengths[0]
 
         # Organise the IDs
-        # TODO: Add tests
         if ids is not None:
             if isinstance(ids, str):
                 if ids not in data.keys():
@@ -68,6 +67,8 @@ class H5Dataset(EasyDataset):
                 if len(ids) != data_length:
                     raise ValueError('If specified as a sequence, IDs must have the same length as the H5 data.')
                 self._ids = ids
+            else:
+                raise TypeError('If set, IDs must either be a sequence or a key contained in the H5 file.')
         else:
             self._ids = [*range(data_length)]
 
