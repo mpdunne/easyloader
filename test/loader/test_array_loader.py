@@ -32,14 +32,14 @@ def test_can_instantiate(arrays):
     ArrayDataLoader(arrays)
 
 
-def test_args_passed_to_data_class(arrays):
-    with patch('easyloader.loader.array.ArrayData') as MockArrayData:
+def test_args_passed_to_dataset_class(arrays):
+    with patch('easyloader.loader.array.ArrayDataset') as MockArrayDataset:
         sample_fraction = 0.7
         sample_seed = 8675309
         shuffle_seed = 5318008
         ids = [*range(len(arrays[0]))]
         ArrayDataLoader(arrays, ids=ids, shuffle_seed=shuffle_seed, sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockArrayData.assert_called_once_with(arrays, ids=ids, shuffle_seed=shuffle_seed,
+        MockArrayDataset.assert_called_once_with(arrays, ids=ids, shuffle_seed=shuffle_seed,
                                               sample_fraction=sample_fraction, sample_seed=sample_seed)
 
 

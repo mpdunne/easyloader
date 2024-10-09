@@ -1,9 +1,9 @@
 import pandas as pd
+import numpy as np
 
-from typing import Sequence, Union
+from typing import Iterable, Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
-from easyloader.data.df import DFData
 from easyloader.utils.random import Seedable
 
 
@@ -18,7 +18,8 @@ class DFDataset(EasyDataset):
                  column_groups: Sequence[Sequence[str]] = None,
                  id_column: str = None,
                  sample_fraction: float = 1.0,
-                 sample_seed: Seedable = None):
+                 sample_seed: Seedable = None,
+                 shuffle_seed: Seedable = None):
 
         """
         Constructor for the DFDataset class.
@@ -28,40 +29,56 @@ class DFDataset(EasyDataset):
         :param id_column: The column to use as IDs. If not set, use the DF index.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
+        :param shuffle_seed: Seed for shuffling.
         """
 
         # Initialize the parent class
         super().__init__(sample_fraction=sample_fraction,
-                         sample_seed=sample_seed)
+                         sample_seed=sample_seed,
+                         shuffle_seed=shuffle_seed)
 
-        self.data = DFData(df, id_column=id_column, sample_fraction=sample_fraction, sample_seed=sample_seed)
+        # Organise the IDs
+        if id_column is not None and not isinstance(id_column, str) and id_column not in df.columns:
+            raise ValueError('ID column must be a column in the DF.')
+        self.id_column = id_column
+
+        # Perform sampling
+        self._index = [*range(len(df))]
+        if sample_fraction is not None:
+            index = self.sample_random_state.sample(self._index, int(sample_fraction * len(df)))
+            index = sorted(index)
+            self._index = index
+            self.df = df.iloc[self._index]
+        else:
+            self.df = df
 
         if column_groups is None:
-            raise NotImplemented('Currently need to specify column groups')
-            # TODO: Allow specify no columns, or just "columns".
+            column_groups = [df.columns]
 
         self.column_groups = column_groups
 
-    @property
-    def index(self):
+    def shuffle(self):
         """
-        The numeric indices of the underlying DF, relative to the inputted one.
+        Shuffle the underlying DF.
 
-        :return: The indices.
+        :return: None.
         """
-        return self.data.index
+        ixs = [*range(len(self.df))]
+        self.shuffle_random_state.shuffle(ixs)
+        self._index = list(np.array(self._index)[ixs])
+        self.df = self.df.iloc[ixs]
 
     @property
-    def ids(self):
+    def ids(self) -> Iterable:
         """
         The IDs, according to the id_column attribute.
 
         :return: The IDs
         """
-        return self.data.ids
-
-    def __len__(self) -> int:
-        return len(self.data)
+        if self.id_column is not None:
+            return self.df[self.id_column]
+        else:
+            return self.df.index
 
     def __getitem__(self, ix: Union[int, slice]):
-        return tuple([self.data.df[g].iloc[ix].to_numpy() for g in self.column_groups])
+        return tuple([self.df[g].iloc[ix].to_numpy() for g in self.column_groups])

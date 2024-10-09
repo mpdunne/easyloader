@@ -27,8 +27,8 @@ def test_can_instantiate(df):
     DFDataLoader(df, column_groups=column_groups)
 
 
-def test_args_passed_to_data_class(df):
-    with patch('easyloader.loader.df.DFData') as MockDFData:
+def test_args_passed_to_dataset_class(df):
+    with patch('easyloader.loader.df.DFDataset') as MockDFDataset:
         sample_fraction = 0.7
         sample_seed = 8675309
         shuffle_seed = 5318008
@@ -36,8 +36,9 @@ def test_args_passed_to_data_class(df):
         column_groups = [['ones', 'tens'], ['hundreds']]
         DFDataLoader(df, column_groups=column_groups, id_column=id_column, shuffle_seed=shuffle_seed,
                      sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockDFData.assert_called_once_with(df, id_column=id_column, shuffle_seed=shuffle_seed,
-                                              sample_fraction=sample_fraction, sample_seed=sample_seed)
+        MockDFDataset.assert_called_once_with(df, column_groups=column_groups, id_column=id_column,
+                                              shuffle_seed=shuffle_seed, sample_fraction=sample_fraction,
+                                              sample_seed=sample_seed)
 
 
 def test_can_iterate(df):

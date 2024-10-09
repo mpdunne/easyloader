@@ -4,8 +4,7 @@ import torch
 from typing import Sequence
 
 from easyloader.loader.base import EasyDataLoader
-from easyloader.data.df import DFData
-from easyloader.utils.batch import get_n_batches
+from easyloader.dataset.df import DFDataset
 from easyloader.utils.random import Seedable
 
 
@@ -44,45 +43,21 @@ class DFDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.data = DFData(df, id_column=id_column, sample_seed=sample_seed,
-                           sample_fraction=sample_fraction, shuffle_seed=shuffle_seed)
-        self.column_groups = column_groups
-
-    @property
-    def index(self):
-        """
-        The numeric indices of the underlying DF, relative to the inputted one.
-
-        :return: The indices.
-        """
-        return self.data.index
-
-    @property
-    def ids(self):
-        """
-        The IDs, according to the id_column attribute.
-
-        :return: The IDs
-        """
-        return self.data.ids
-
-    def __iter__(self):
-        if self.shuffle:
-            self.data.shuffle()
-
-        self.i = 0
-        return self
+        self.dataset = DFDataset(df, id_column=id_column, column_groups=column_groups, sample_seed=sample_seed,
+                                 sample_fraction=sample_fraction, shuffle_seed=shuffle_seed)
 
     def __next__(self):
+        """
+        Get the next batch.
+
+        :return: The next batch.
+        """
         if self.i >= len(self):
             raise StopIteration
 
         batch = tuple(
-            torch.Tensor(self.data.df[g].iloc[self.i * self.batch_size: (self.i + 1) * self.batch_size].to_numpy())
-            for g in self.column_groups)
+            torch.Tensor(self.dataset.df[g].iloc[self.i * self.batch_size: (self.i + 1) * self.batch_size].to_numpy())
+            for g in self.dataset.column_groups)
 
         self.i += 1
         return batch
-
-    def __len__(self) -> int:
-        return get_n_batches(len(self.data), self.batch_size)

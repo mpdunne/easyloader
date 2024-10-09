@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Sequence, Union
 
 from easyloader.loader.base import EasyDataLoader
-from easyloader.data.h5 import H5Data
-from easyloader.utils.batch import get_n_batches
+from easyloader.dataset.h5 import H5Dataset
 from easyloader.utils.grains import grab_slices_from_grains
 
 
@@ -46,35 +45,15 @@ class H5DataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.data = H5Data(data_path, keys=keys, id_key=id_key, grain_size=grain_size, shuffle_seed=shuffle_seed,
-                           sample_fraction=sample_fraction, sample_seed=sample_seed)
-
-    @property
-    def index(self):
-        """
-        The numeric indices of the underlying data, relative to the inputted one.
-
-        :return: The indices.
-        """
-        return self.data.index
-
-    @property
-    def ids(self):
-        """
-        The IDs, according to the id_key attribute.
-
-        :return: The IDs
-        """
-        return self.data.ids
-
-    def __iter__(self):
-        if self.shuffle:
-            self.data.shuffle()
-
-        self.i = 0
-        return self
+        self.dataset = H5Dataset(data_path, keys=keys, id_key=id_key, grain_size=grain_size, shuffle_seed=shuffle_seed,
+                                 sample_fraction=sample_fraction, sample_seed=sample_seed)
 
     def __next__(self):
+        """
+        Get the next batch.
+
+        :return: The next batch.
+        """
         if self.i >= len(self):
             raise StopIteration
 
@@ -83,13 +62,9 @@ class H5DataLoader(EasyDataLoader):
         batch_start_ix = self.i * self.batch_size
         batch_end_ix = (self.i + 1) * self.batch_size
 
-        ix_slices = grab_slices_from_grains(self.data.grain_index, self.data.grain_size, batch_start_ix, batch_end_ix)
-        for key in self.data.keys:
-            values.append(torch.Tensor(np.concatenate([self.data.h5[key][ix_slice] for ix_slice in ix_slices])))
+        ix_slices = grab_slices_from_grains(self.dataset.grain_index, self.dataset.grain_size, batch_start_ix, batch_end_ix)
+        for key in self.dataset.keys:
+            values.append(torch.Tensor(np.concatenate([self.dataset.h5[key][ix_slice] for ix_slice in ix_slices])))
 
         self.i += 1
         return tuple(values)
-
-    def __len__(self) -> int:
-        return get_n_batches(len(self.data), self.batch_size)
-
