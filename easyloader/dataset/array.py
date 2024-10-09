@@ -31,6 +31,9 @@ class ArrayDataset(EasyDataset):
                          shuffle_seed=shuffle_seed)
 
         # Check lengths
+        if isinstance(arrays, np.ndarray):
+            arrays = [arrays]
+
         array_lengths = [len(arr) for arr in arrays]
         if len(set(array_lengths)) != 1:
             raise ValueError('Arrays must all have the same length')
