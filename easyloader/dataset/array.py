@@ -12,7 +12,7 @@ class ArrayDataset(EasyDataset):
     """
 
     def __init__(self,
-                 arrays: Sequence[np.ndarray],
+                 arrays: Union[np.ndarray, Sequence[np.ndarray]],
                  ids: Sequence[Any] = None,
                  sample_fraction: float = 1.0,
                  sample_seed: Seedable = None,
@@ -37,6 +37,7 @@ class ArrayDataset(EasyDataset):
         array_length = array_lengths[0]
 
         # Organise the IDs
+        # TODO: Add tests
         index = [*range(array_length)]
         if ids is not None:
             if not len(ids) == array_length:

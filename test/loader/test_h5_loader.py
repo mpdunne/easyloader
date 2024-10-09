@@ -40,9 +40,9 @@ def test_args_passed_to_dataset_class(h5_file):
         shuffle_seed = 5318008
         id_key = 'id_key'
         keys = ['key_1', 'key_2']
-        H5DataLoader(h5_file, keys=keys, id_key=id_key, grain_size=5, shuffle_seed=shuffle_seed,
+        H5DataLoader(h5_file, keys=keys, ids=id_key, grain_size=5, shuffle_seed=shuffle_seed,
                      sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockH5Dataset.assert_called_once_with(h5_file, keys=keys, id_key=id_key, grain_size=5, shuffle_seed=shuffle_seed,
+        MockH5Dataset.assert_called_once_with(h5_file, keys=keys, ids=id_key, grain_size=5, shuffle_seed=shuffle_seed,
                                            sample_fraction=sample_fraction, sample_seed=sample_seed)
 
 
@@ -78,7 +78,7 @@ def test_ids_set(h5_file):
     dl = H5DataLoader(h5_file, keys=keys)
     h5 = h5py.File(h5_file)
     assert len(dl.ids) == len(h5[keys[0]][:])
-    dl = H5DataLoader(h5_file, keys=keys, id_key='id_key')
+    dl = H5DataLoader(h5_file, keys=keys, ids='id_key')
     assert (dl.ids == h5['id_key'][:]).all()
 
 

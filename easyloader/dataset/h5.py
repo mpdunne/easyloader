@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Hashable, Optional, Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.utils.grains import grab_slices_from_grains
@@ -18,8 +18,8 @@ class H5Dataset(EasyDataset):
 
     def __init__(self,
                  data_path: Union[str, Path],
-                 keys: Sequence[str],
-                 id_key: str = None,
+                 keys: Optional[Union[Sequence[str], str]],
+                 ids: Union[str, Sequence[Hashable]] = None,
                  grain_size: int = 1,
                  sample_fraction: float = 1.0,
                  sample_seed: int = None,
@@ -56,12 +56,18 @@ class H5Dataset(EasyDataset):
         data_length = data_lengths[0]
 
         # Organise the IDs
-        if id_key is not None:
-            if id_key not in data.keys():
-                raise ValueError(f'Specified id key {id_key} not present in H5 file.')
-            if len(data[id_key]) != data_length:
-                raise ValueError(f'Length of data for ID key {id_key} does not match that of other data.')
-            self._ids = data[id_key][:]
+        # TODO: Add tests
+        if ids is not None:
+            if isinstance(ids, str):
+                if ids not in data.keys():
+                    raise ValueError(f'Specified id key {ids} not present in H5 file.')
+                if len(data[ids]) != data_length:
+                    raise ValueError(f'Length of data for ID key {ids} does not match that of other data.')
+                self._ids = data[ids][:]
+            elif isinstance(ids, Sequence):
+                if len(ids) != data_length:
+                    raise ValueError('If specified as a sequence, IDs must have the same length as the H5 data.')
+                self._ids = ids
         else:
             self._ids = [*range(data_length)]
 

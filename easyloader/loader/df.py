@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 
-from typing import Sequence
+from typing import Hashable, Optional, Sequence, Union
 
 from easyloader.loader.base import EasyDataLoader
 from easyloader.dataset.df import DFDataset
@@ -16,8 +16,8 @@ class DFDataLoader(EasyDataLoader):
 
     def __init__(self,
                  df: pd.DataFrame,
-                 column_groups: Sequence[Sequence[str]],
-                 id_column: str = None,
+                 columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]] = None,
+                 ids: Union[str, Sequence[Hashable]] = None,
                  batch_size: int = 1,
                  sample_fraction: float = None,
                  shuffle: bool = False,
@@ -27,8 +27,8 @@ class DFDataLoader(EasyDataLoader):
         Constructor for the DFDataLoader class.
 
         :param df: The DF to use for the data loader.
-        :param column_groups: The column groups to use.
-        :param id_column: The column to use as IDs. If not set, use the DF index.
+        :param columns: The column groups to use.
+        :param ids: The column to use as IDs. If not set, use the DF index.
         :param batch_size: The batch size.
         :param sample_fraction: Fraction of the dataset to sample.
         :param shuffle: Whether to shuffle the data.
@@ -43,7 +43,7 @@ class DFDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.dataset = DFDataset(df, id_column=id_column, column_groups=column_groups, sample_seed=sample_seed,
+        self.dataset = DFDataset(df, ids=ids, columns=columns, sample_seed=sample_seed,
                                  sample_fraction=sample_fraction, shuffle_seed=shuffle_seed)
 
     def __next__(self):

@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from typing import Iterable, Sequence, Union
+from typing import Hashable, Iterable, Optional, Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.utils.random import Seedable
@@ -15,8 +15,8 @@ class DFDataset(EasyDataset):
 
     def __init__(self,
                  df: pd.DataFrame,
-                 column_groups: Sequence[Sequence[str]] = None,
-                 id_column: str = None,
+                 columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]] = None,
+                 ids: Union[str, Sequence[Hashable]] = None,
                  sample_fraction: float = 1.0,
                  sample_seed: Seedable = None,
                  shuffle_seed: Seedable = None):
@@ -25,8 +25,8 @@ class DFDataset(EasyDataset):
         Constructor for the DFDataset class.
 
         :param df: The DF to use for the data set.
-        :param column_groups: The column groups to use.
-        :param id_column: The column to use as IDs. If not set, use the DF index.
+        :param columns: The column groups to use.
+        :param ids: The column to use as IDs. If not set, use the DF index.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
         :param shuffle_seed: Seed for shuffling.
@@ -38,9 +38,21 @@ class DFDataset(EasyDataset):
                          shuffle_seed=shuffle_seed)
 
         # Organise the IDs
-        if id_column is not None and not isinstance(id_column, str) and id_column not in df.columns:
-            raise ValueError('ID column must be a column in the DF.')
-        self.id_column = id_column
+        # TODO: Add tests
+        if ids is not None:
+            if isinstance(ids, str):
+                if ids not in df.columns:
+                    raise ValueError('ID column must be a column in the DF.')
+                else:
+                    self._ids = df[ids]
+            elif isinstance(ids, Sequence):
+                if len(ids) != len(df):
+                    raise ValueError('If specified as a sequence, IDs must have the same length as the DF.')
+                self._ids = ids
+            else:
+                raise TypeError('IDs must either be specified as a list or a column name, or omitted.')
+        else:
+            self._ids = df.index
 
         # Perform sampling
         self._index = [*range(len(df))]
@@ -52,10 +64,11 @@ class DFDataset(EasyDataset):
         else:
             self.df = df
 
-        if column_groups is None:
-            column_groups = [df.columns]
+        if columns is None:
+            # TODO: Don't interpret "no columns" as a group.
+            columns = [df.columns]
 
-        self.column_groups = column_groups
+        self.column_groups = columns
 
     def shuffle(self):
         """
@@ -67,18 +80,6 @@ class DFDataset(EasyDataset):
         self.shuffle_random_state.shuffle(ixs)
         self._index = list(np.array(self._index)[ixs])
         self.df = self.df.iloc[ixs]
-
-    @property
-    def ids(self) -> Iterable:
-        """
-        The IDs, according to the id_column attribute.
-
-        :return: The IDs
-        """
-        if self.id_column is not None:
-            return self.df[self.id_column]
-        else:
-            return self.df.index
 
     def __getitem__(self, ix: Union[int, slice]):
         return tuple([self.df[g].iloc[ix].to_numpy() for g in self.column_groups])

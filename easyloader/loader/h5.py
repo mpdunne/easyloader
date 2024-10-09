@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Hashable, Sequence, Union
 
 from easyloader.loader.base import EasyDataLoader
 from easyloader.dataset.h5 import H5Dataset
@@ -19,7 +19,7 @@ class H5DataLoader(EasyDataLoader):
     def __init__(self,
                  data_path: Union[str, Path],
                  keys: Sequence[str],
-                 id_key: str = None,
+                 ids: Union[str, Sequence[Hashable]] = None,
                  batch_size: int = 1,
                  grain_size: int = 1,
                  sample_fraction: float = None,
@@ -45,7 +45,7 @@ class H5DataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.dataset = H5Dataset(data_path, keys=keys, id_key=id_key, grain_size=grain_size, shuffle_seed=shuffle_seed,
+        self.dataset = H5Dataset(data_path, keys=keys, ids=ids, grain_size=grain_size, shuffle_seed=shuffle_seed,
                                  sample_fraction=sample_fraction, sample_seed=sample_seed)
 
     def __next__(self):

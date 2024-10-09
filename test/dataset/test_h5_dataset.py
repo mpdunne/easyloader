@@ -143,7 +143,7 @@ def test_shuffle_changes_index(h5_file):
 def test_id_key_specified(h5_file):
     keys = ['key_1', 'key_2']
     id_key = 'id_key'
-    data = H5Dataset(h5_file, keys=keys, id_key=id_key, shuffle_seed=8675309)
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
     h5 = h5py.File(h5_file)
     assert (data.ids == h5[id_key][:]).all()
 
@@ -151,14 +151,14 @@ def test_id_key_specified(h5_file):
 def test_id_key_unspecified(h5_file):
     keys = ['key_1', 'key_2']
     id_key = 'id_key'
-    data = H5Dataset(h5_file, keys=keys, id_key=id_key, shuffle_seed=8675309)
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
     assert data.ids == [*range(len(data))]
 
 
 def test_shuffle_changes_ids(h5_file):
     keys = ['key_1', 'key_2']
     id_key = 'id_key'
-    data = H5Dataset(h5_file, keys=keys, id_key=id_key, shuffle_seed=8675309)
+    data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
     data.shuffle()
     assert list(data.ids) != sorted(list(data.ids))
 

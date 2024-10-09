@@ -22,7 +22,7 @@ def df():
 
 def test_can_instantiate(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    DFDataset(df, column_groups=column_groups)
+    DFDataset(df, columns=column_groups)
 
 
 @pytest.mark.parametrize(
@@ -96,7 +96,7 @@ def test_shuffle_changes_index(df):
 
 
 def test_ids_specified(df):
-    data = DFDataset(df, shuffle_seed=8675309, id_column='id')
+    data = DFDataset(df, shuffle_seed=8675309, ids='id')
     assert (data.ids == df['id']).all()
 
 
@@ -106,14 +106,14 @@ def test_ids_unspecified(df):
 
 
 def test_shuffle_changes_ids(df):
-    data = DFDataset(df, shuffle_seed=8675309, id_column='id')
+    data = DFDataset(df, shuffle_seed=8675309, ids='id')
     data.shuffle()
     assert list(data.ids) != sorted(list(data.ids))
 
 
 def test_duplicate_ixs_okay(df):
     double_df = pd.concat([df, df])
-    data = DFDataset(double_df, shuffle_seed=8675309, id_column='id', sample_fraction=0.7)
+    data = DFDataset(double_df, shuffle_seed=8675309, ids='id', sample_fraction=0.7)
     assert len(data.df) == 0.7 * len(double_df)
     data.shuffle()
     assert len(data.df) == 0.7 * len(double_df)
@@ -121,7 +121,7 @@ def test_duplicate_ixs_okay(df):
 
 def test_can_get_item(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    ds = DFDataset(df, column_groups=column_groups)
+    ds = DFDataset(df, columns=column_groups)
     entries = ds[5]
     assert isinstance(entries, tuple)
     assert (entries[0] == df[column_groups[0]].iloc[5]).all()
@@ -131,13 +131,13 @@ def test_can_get_item(df):
 def test_cant_get_out_of_range_item(df):
     with pytest.raises(IndexError):
         column_groups = [['ones', 'tens'], ['hundreds']]
-        ds = DFDataset(df, column_groups=column_groups)
+        ds = DFDataset(df, columns=column_groups)
         ds[1000000]
 
 
 def test_can_be_inputted_to_torch_dataloader(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    ds = DFDataset(df, column_groups=column_groups)
+    ds = DFDataset(df, columns=column_groups)
     DataLoader(ds)
 
 
@@ -151,7 +151,7 @@ def test_column_groups_used(df):
 
 def test_slice_works(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    ds = DFDataset(df, column_groups=column_groups)
+    ds = DFDataset(df, columns=column_groups)
     slices = ds[:10]
     assert all(len(s) == 10 for s in slices)
     assert all((s == df[g].iloc[:10]).all().all() for s, g in zip(slices, column_groups))
@@ -159,7 +159,7 @@ def test_slice_works(df):
 
 def test_slice_works_sampled(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    ds = DFDataset(df, column_groups=column_groups, sample_fraction=0.3, sample_seed=8675309)
+    ds = DFDataset(df, columns=column_groups, sample_fraction=0.3, sample_seed=8675309)
     slices = ds[:10]
     assert all(len(s) == 10 for s in slices)
     assert all(not (s == df[g].iloc[:10]).all().all() for s, g in zip(slices, column_groups))
@@ -167,7 +167,7 @@ def test_slice_works_sampled(df):
 
 def test_works_with_torch_dataloader(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    ds = DFDataset(df, column_groups=column_groups)
+    ds = DFDataset(df, columns=column_groups)
     dl = DataLoader(ds, batch_size=10)
     entries = next(iter(dl))
     expected = tuple([df[g].iloc[:10] for g in column_groups])
@@ -178,7 +178,7 @@ def test_works_with_torch_dataloader(df):
 
 def test_shuffle_works_with_torch_dataloader(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
-    ds = DFDataset(df, column_groups=column_groups)
+    ds = DFDataset(df, columns=column_groups)
     dl = DataLoader(ds, shuffle=True, batch_size=1000000)
     all_entries = next(iter(dl))
     assert all(not (entry.numpy() == df[g]).all().all() for entry, g in zip(all_entries, column_groups))

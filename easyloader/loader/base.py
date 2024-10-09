@@ -30,8 +30,6 @@ class EasyDataLoader(DataLoader, ABC):
         :param shuffle: Whether to shuffle the data.
         """
 
-        super().__init__()
-
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.sample_fraction = sample_fraction

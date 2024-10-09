@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Hashable, Sequence
 from typing import Iterable, Union
 
 from easyloader.utils.random import get_random_state, Seedable
@@ -9,6 +9,9 @@ class EasyDataset(Dataset, ABC):
     """
     Interface class for EasyLoader datasets with common functionality for sampling and indexing.
     """
+
+    _ids: Sequence[Hashable]
+    _index: Sequence[int]
 
     def __init__(self, sample_fraction: float = 1.0,
                  sample_seed: Seedable = None,
