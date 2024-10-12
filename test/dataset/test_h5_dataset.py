@@ -3,6 +3,7 @@ import os
 import pytest
 import numpy as np
 import tempfile
+import torch
 
 from easyloader.dataset.h5 import H5Dataset
 from torch.utils.data import DataLoader
@@ -50,9 +51,45 @@ def h5_file_jagged():
         yield file_path
 
 
-def test_can_instantiate(h5_file):
+def test_can_instantiate_with_single_keys(h5_file):
+    keys = 'key_1'
+    H5Dataset(h5_file, keys=keys)
+
+
+def test_can_instantiate_with_multiple_keys(h5_file):
     keys = ['key_1', 'key_2']
     H5Dataset(h5_file, keys=keys)
+
+
+def test_single_key_gives_single_output(h5_file):
+    keys = 'key_1'
+    ds = H5Dataset(h5_file, keys=keys)
+    h5 = h5py.File(h5_file)
+    assert isinstance(ds[0], np.ndarray)
+    assert ds[0].shape == h5['key_1'].shape[1:]
+    assert isinstance(ds[:10], np.ndarray)
+    assert ds[:10].shape == (10, *h5['key_1'].shape[1:])
+
+
+@pytest.mark.parametrize('keys', (
+        ['key_1', 'key_2'],
+        ('key_1', 'key_2'),
+))
+def test_multiple_keys_give_multiple_outputs(h5_file, keys):
+    ds = H5Dataset(h5_file, keys=keys)
+    h5 = h5py.File(h5_file)
+
+    assert isinstance(ds[0], tuple)
+    assert len(ds[0]) == 2
+    for i, key in enumerate(keys):
+        assert isinstance(ds[0][i], np.ndarray)
+        assert ds[0][i].shape == h5[key].shape[1:]
+
+    assert isinstance(ds[:10], tuple)
+    assert len(ds[:10]) == 2
+    for i, key in enumerate(keys):
+        assert isinstance(ds[:10][i], np.ndarray)
+        assert ds[:10][i].shape == (10, *h5[key].shape[1:])
 
 
 def test_cant_instantiate_without_keys(h5_file):
@@ -234,7 +271,19 @@ def test_slice_works_sampled(h5_file):
     assert all(not (s == h5[k][:10]).all() for s, k in zip(slices, keys))
 
 
-def test_works_with_torch_dataloader(h5_file):
+def test_works_with_torch_dataloader_single_key(h5_file):
+    keys = 'key_1'
+    ds = H5Dataset(h5_file, keys=keys)
+    dl = DataLoader(ds, batch_size=10)
+    h5 = h5py.File(h5_file)
+    entries = next(iter(dl))
+    expected = h5['key_1'][:10]
+    assert len(entries) == 10
+    assert isinstance(entries, torch.Tensor)
+    assert (entries.numpy() == expected).all()
+
+
+def test_works_with_torch_dataloader_multi_key(h5_file):
     keys = ['key_1', 'key_2']
     ds = H5Dataset(h5_file, keys=keys)
     dl = DataLoader(ds, batch_size=10)
@@ -242,8 +291,9 @@ def test_works_with_torch_dataloader(h5_file):
     entries = next(iter(dl))
     expected = tuple([h5[k][:10] for k in keys])
     assert all(len(entry) == 10 for entry in entries)
-    assert isinstance(expected, tuple)
+    assert isinstance(entries, list)
     assert all((entry.numpy() == array).all() for entry, array in zip(entries, expected))
+
 
 
 def test_shuffle_works_with_torch_dataloader(h5_file):

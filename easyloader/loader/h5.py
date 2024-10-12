@@ -16,6 +16,8 @@ class H5DataLoader(EasyDataLoader):
     https://towardsdatascience.com/reading-h5-files-faster-with-pytorch-datasets-3ff86938cc
     """
 
+    dataset: H5Dataset
+
     def __init__(self,
                  data_path: Union[str, Path],
                  keys: Sequence[str],
@@ -57,14 +59,14 @@ class H5DataLoader(EasyDataLoader):
         if self.i >= len(self):
             raise StopIteration
 
-        values = []
-
         batch_start_ix = self.i * self.batch_size
         batch_end_ix = (self.i + 1) * self.batch_size
 
-        ix_slices = grab_slices_from_grains(self.dataset.grain_index, self.dataset.grain_size, batch_start_ix, batch_end_ix)
-        for key in self.dataset.keys:
-            values.append(torch.Tensor(np.concatenate([self.dataset.h5[key][ix_slice] for ix_slice in ix_slices])))
+        result = self.dataset[batch_start_ix: batch_end_ix]
+        if isinstance(result, np.ndarray):
+            batch = torch.Tensor(result)
+        else:
+            batch = tuple(torch.Tensor(arr) for arr in result)
 
         self.i += 1
-        return tuple(values)
+        return batch

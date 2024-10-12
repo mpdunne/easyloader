@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
+import inspect
 
 from typing import Hashable, Iterable, Optional, Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.utils.random import Seedable
+from easyloader.utils.typing import is_hashable
 
 
 class DFDataset(EasyDataset):
@@ -37,6 +39,8 @@ class DFDataset(EasyDataset):
                          sample_seed=sample_seed,
                          shuffle_seed=shuffle_seed)
 
+        self._column_groups, self._single = self._process_columns(columns, df)
+
         # Organise the IDs
         if ids is not None:
             if isinstance(ids, str):
@@ -63,11 +67,67 @@ class DFDataset(EasyDataset):
         else:
             self.df = df
 
-        if columns is None:
-            # TODO: Don't interpret "no columns" as a group.
-            columns = [df.columns]
+    @staticmethod
+    def _process_columns(columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]],
+                         df: pd.DataFrame):
+        """
+        Check the inputted columns, ensure they are well-defined and part of the DF,
+        and decide whether the dataset should yield single or multi outputs.
 
-        self.column_groups = columns
+        :param columns: A sequence of column names, or a sequence of sequences of column names.
+        :param df: The DF against which to check the columns.
+        :return: The column groups, and whether the output should be treated as single.
+        """
+        # If not specified, use all columns.
+        if columns is None:
+            columns = [*df.columns]
+
+        if is_hashable(columns):
+            # Special case where the "columns" is a tuple and that tuple is also a DF column.
+            if isinstance(columns, tuple):
+                if columns in df.columns:
+                    return [columns], True
+                else:
+                    columns = list(columns)
+            else:
+                if columns not in df.columns:
+                    raise ValueError('Single column specified but column is not present in the DF.')
+                else:
+                    return [columns], True
+
+        if not isinstance(columns, Sequence):
+            raise TypeError('Value for "columns" must be a sequence of column names, or of sequences of column names.')
+
+        # Convert any tuples to lists, unless they are column names.
+        columns_detupled = []
+        for c in columns:
+            if isinstance(c, tuple) and is_hashable(c) and c not in df.columns:
+                c = list(c)
+            columns_detupled.append(c)
+        columns = columns_detupled
+
+        # Next, check everything specified is in the DF columns.
+        missing_columns = []
+        for c in columns:
+            if isinstance(c, list):
+                for cc in c:
+                    if not is_hashable(cc) or cc not in df.columns:
+                        missing_columns.append(str(cc))
+            else:
+                if not is_hashable(c) or c not in df.columns:
+                    missing_columns.append(str(c))
+
+        if missing_columns:
+            raise ValueError('Some specified columns are not in the DF: ' + ', '.join(missing_columns))
+
+        if all(is_hashable(c) for c in columns):
+            single = True
+            column_groups = [columns]
+        else:
+            single = False
+            column_groups = columns
+
+        return column_groups, single
 
     def shuffle(self):
         """
@@ -80,10 +140,39 @@ class DFDataset(EasyDataset):
         self._index = list(np.array(self._index)[ixs])
         self.df = self.df.iloc[ixs]
 
+    @property
+    def column_groups(self):
+        """
+        Return the list of column groups (or single column, or column group) being used.
+
+        :return: The list of column groups (or single column, or column group)
+        """
+        return self._column_groups
+
+    @staticmethod
+    def _item_to_numpy(x):
+        """
+        df.to_numpy() is slightly faster than np.numpy(df). But single items are not
+        always dfs, so be safe here. Type checking is very little overhead.
+
+        :param x: The item to convert.
+        :return: A numpy version.
+        """
+        if isinstance(x, pd.DataFrame):
+            return x.to_numpy()
+        else:
+            return np.array(x)
+
     def __getitem__(self, ix: Union[int, slice]):
         """
         Get items, either by a single index or by a slice.
 
         :return: A subset of items.
         """
-        return tuple([self.df[g].iloc[ix].to_numpy() for g in self.column_groups])
+        if self._single:
+            return self._item_to_numpy(self.df[self._column_groups[0]].iloc[ix])
+        else:
+            return tuple([self._item_to_numpy(self.df[g].iloc[ix]) for g in self._column_groups])
+
+
+DFDataset.__signature__ = inspect.signature(DFDataset.__init__)

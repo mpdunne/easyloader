@@ -1,10 +1,10 @@
 import copy
 import numpy as np
 import pytest
+import torch
 
 from copy import deepcopy
 from torch.utils.data import DataLoader
-from unittest.mock import patch
 
 from easyloader.dataset.array import ArrayDataset
 
@@ -30,17 +30,49 @@ def helper_check_shuffled_arrays_equal(arr1: np.ndarray, arr2: np.ndarray):
     assert (sorted_arr1 == sorted_arr2).all()
 
 
-def test_can_instantiate(arrays):
+def test_can_instantiate_with_multiple_arrays(arrays):
     ArrayDataset(arrays)
 
 
-def test_uneven_sized_arrays_throws_error():
+def test_can_instantiate_with_single_array(arrays):
+    ArrayDataset(arrays[0])
+
+
+def test_values_with_multiple_arrays(arrays):
+    ds = ArrayDataset(arrays)
+    assert isinstance(ds[0], tuple)
+    assert all((dss == array[0]).all() for dss, array in zip(ds[0], arrays))
+    assert isinstance(ds[:10], tuple)
+    assert all((dss == array[:10]).all() for dss, array in zip(ds[:10], arrays))
+
+
+def test_values_with_single_arrays(arrays):
+    ds = ArrayDataset(arrays[0])
+    assert isinstance(ds[0], np.ndarray)
+    assert (ds[0] == arrays[0][0]).all()
+    assert isinstance(ds[:10], np.ndarray)
+    assert (ds[:10] == arrays[0][:10]).all()
+
+
+def test_process_arrays_unevenly_sized_arrays_throws_error(arrays):
     arrays = [
         np.ones(shape=(100, 3)),
         np.ones(shape=(99, 3)),
     ]
     with pytest.raises(ValueError):
         ArrayDataset(arrays)
+
+
+def test_process_multiple_arrays_multiple_outputs(arrays):
+    ds = ArrayDataset(arrays)
+    assert isinstance(ds[0], tuple)
+    assert all((dss == array[0]).all() for dss, array in zip(ds[0], arrays))
+
+
+def test_process_single_arrays_single_output(arrays):
+    ds = ArrayDataset(arrays[0])
+    assert isinstance(ds[0], np.ndarray)
+    assert (ds[0] == arrays[0][0]).all()
 
 
 @pytest.mark.parametrize(
@@ -177,12 +209,21 @@ def test_slice_works_sampled(arrays):
     assert all(not (s == arr[:10]).all() for s, arr in zip(slices, arrays))
 
 
-def test_works_with_torch_dataloader(arrays):
+def test_works_with_torch_dataloader_single_array(arrays):
+    ds = ArrayDataset(arrays[0])
+    dl = DataLoader(ds, batch_size=10)
+    entry = next(iter(dl))
+    assert isinstance(entry, torch.Tensor)
+    expected = arrays[0][:10]
+    assert (entry.numpy() == expected).all()
+
+
+def test_works_with_torch_dataloader_multi_array(arrays):
     ds = ArrayDataset(arrays)
     dl = DataLoader(ds, batch_size=10)
     entries = next(iter(dl))
+    assert isinstance(entries, list)
     expected = tuple([arr[:10] for arr in arrays])
-    assert isinstance(expected, tuple)
     assert all((entry.numpy() == array).all() for entry, array in zip(entries, expected))
 
 

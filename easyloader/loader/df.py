@@ -1,5 +1,4 @@
 import pandas as pd
-import torch
 
 from typing import Hashable, Optional, Sequence, Union
 
@@ -13,6 +12,8 @@ class DFDataLoader(EasyDataLoader):
     Turn a Pandas data frame into a PyTorch Data Loader.
 
     """
+
+    dataset: DFDataset
 
     def __init__(self,
                  df: pd.DataFrame,
@@ -45,19 +46,3 @@ class DFDataLoader(EasyDataLoader):
 
         self.dataset = DFDataset(df, ids=ids, columns=columns, sample_seed=sample_seed,
                                  sample_fraction=sample_fraction, shuffle_seed=shuffle_seed)
-
-    def __next__(self):
-        """
-        Get the next batch.
-
-        :return: The next batch.
-        """
-        if self.i >= len(self):
-            raise StopIteration
-
-        batch = tuple(
-            torch.Tensor(self.dataset.df[g].iloc[self.i * self.batch_size: (self.i + 1) * self.batch_size].to_numpy())
-            for g in self.dataset.column_groups)
-
-        self.i += 1
-        return batch

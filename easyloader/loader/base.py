@@ -1,4 +1,7 @@
-from abc import ABC, abstractmethod
+import torch
+import numpy as np
+
+from abc import ABC
 from torch.utils.data import DataLoader
 
 from easyloader.dataset.base import EasyDataset
@@ -65,15 +68,6 @@ class EasyDataLoader(DataLoader, ABC):
         self.i = 0
         return self
 
-    @abstractmethod
-    def __next__(self):
-        """
-        Get the next batch.
-
-        :return: The next batch.
-        """
-        pass
-
     def __len__(self) -> int:
         """
         The length of the loader, i.e. the number of batches.
@@ -81,3 +75,24 @@ class EasyDataLoader(DataLoader, ABC):
         :return: The total number of batches.
         """
         return get_n_batches(len(self.dataset), self.batch_size)
+
+    def __next__(self):
+        """
+        Get the next batch.
+
+        :return: The next batch.
+        """
+        if self.i >= len(self):
+            raise StopIteration
+
+        batch_start_ix = self.i * self.batch_size
+        batch_end_ix = (self.i + 1) * self.batch_size
+
+        result = self.dataset[batch_start_ix: batch_end_ix]
+        if isinstance(result, np.ndarray):
+            batch = torch.Tensor(result)
+        else:
+            batch = tuple(torch.Tensor(arr) for arr in result)
+
+        self.i += 1
+        return batch
