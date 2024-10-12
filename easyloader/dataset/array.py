@@ -30,10 +30,9 @@ class ArrayDataset(EasyDataset):
                          sample_seed=sample_seed,
                          shuffle_seed=shuffle_seed)
 
-        # Check lengths
-        if isinstance(arrays, np.ndarray):
-            arrays = [arrays]
+        self._single, arrays = self._process_arrays(arrays)
 
+        # Check lengths
         array_lengths = [len(arr) for arr in arrays]
         if len(set(array_lengths)) != 1:
             raise ValueError('Arrays must all have the same length')
@@ -57,6 +56,18 @@ class ArrayDataset(EasyDataset):
             self.arrays = arrays
         self._index = index
 
+    @staticmethod
+    def _process_arrays(arrays):
+        if isinstance(arrays, np.ndarray):
+            arrays = [arrays]
+            single = True
+        else:
+            if not isinstance(arrays, Sequence) or not all(isinstance(arr, np.ndarray) for arr in arrays):
+                raise TypeError('Data must be inputted as either a single array or a sequence of arrays.')
+            single = False
+        
+        return single, arrays
+
     def shuffle(self):
         """
         Shuffle the underlying arrays.
@@ -74,4 +85,7 @@ class ArrayDataset(EasyDataset):
 
         :return: A subset of items.
         """
-        return tuple([arr[ix] for arr in self.arrays])
+        if self._single:
+            return self.arrays[0][ix]
+        else:
+            return tuple([arr[ix] for arr in self.arrays])

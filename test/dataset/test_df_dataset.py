@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
 import pytest
+import torch
 
 from torch.utils.data import DataLoader
 
@@ -20,9 +22,96 @@ def df():
     return df
 
 
-def test_can_instantiate(df):
-    column_groups = [['ones', 'tens'], ['hundreds']]
+def test_can_instantiate_with_no_columns_specified(df):
+    ds = DFDataset(df)
+    assert ds._column_groups == [[*df.columns]]
+
+
+def test_can_instantiate_with_single_column_specified(df):
+    DFDataset(df, columns='ones')
+
+
+def test_can_instantiate_with_only_columns_specifed(df):
+    DFDataset(df, columns=['ones', 'tens'])
+
+
+def test_can_instantiate_withcolumn_groups_specified(df):
+    DFDataset(df, columns=[['ones', 'tens'], ['hundreds']])
+
+
+def test_can_instantiate_with_mix_of_columns_and_column_groups(df):
+    column_groups = [['ones', 'tens'], 'hundreds']
     DFDataset(df, columns=column_groups)
+
+
+def test_missing_columns_causes_error(df):
+    with pytest.raises(ValueError):
+        column_groups = [['ones', 'tens'], ['thousands']]
+        DFDataset(df, columns=column_groups)
+
+
+def test_single_column_gives_single_output(df):
+    ds = DFDataset(df, columns='ones')
+    assert isinstance(ds[0], np.ndarray)
+    assert ds[:10].shape == (10,)
+    assert ds[0].shape == ()
+
+
+def test_ungrouped_columns_give_single_output(df):
+    columns = ['ones', 'tens']
+    ds = DFDataset(df, columns=columns)
+    assert isinstance(ds[0], np.ndarray)
+    assert ds[:10].shape == (10, 2)
+    assert ds[0].shape == (2, )
+
+
+def test_grouped_columns_give_grouped_output(df):
+    column_groups = [['ones', 'tens']]
+    ds = DFDataset(df, columns=column_groups)
+    assert isinstance(ds[0], tuple)
+    assert len(ds[0]) == 1
+    assert ds[0][0].shape == (2,)
+    assert len(ds[:10]) == 1
+    assert ds[:10][0].shape == (10, 2)
+
+    column_groups = [['ones', 'tens'], 'hundreds']
+    ds = DFDataset(df, columns=column_groups)
+    assert isinstance(ds[0], tuple)
+    assert len(ds[0]) == 2
+    assert ds[0][0].shape == (2,)
+    assert ds[0][1].shape == ()
+    assert len(ds[:10]) == 2
+    assert ds[:10][0].shape == (10, 2)
+    assert ds[:10][1].shape == (10,)
+
+    column_groups = [['ones', 'tens'], ['hundreds']]
+    ds = DFDataset(df, columns=column_groups)
+    assert isinstance(ds[0], tuple)
+    assert len(ds[0]) == 2
+    assert ds[0][0].shape == (2,)
+    assert ds[0][1].shape == (1,)
+    assert len(ds[:10]) == 2
+    assert ds[:10][0].shape == (10, 2)
+    assert ds[:10][1].shape == (10, 1)
+
+
+def test_tuple_columns_handled_correctly(df):
+    df[('tens', 'hundreds')] = df['tens'] + df['hundreds']
+
+    ds = DFDataset(df, columns=('tens', 'hundreds'))
+    assert ds._column_groups == [('tens', 'hundreds')]
+    assert ds._single
+
+    ds = DFDataset(df, columns=[('tens', 'hundreds')])
+    assert ds._column_groups == [[('tens', 'hundreds')]]
+    assert ds._single
+
+    ds = DFDataset(df, columns=('ones', 'hundreds'))
+    assert ds._column_groups == [['ones', 'hundreds']]
+    assert ds._single
+
+    ds = DFDataset(df, columns=[('tens', 'hundreds'), 'ones'])
+    assert ds._column_groups == [[('tens', 'hundreds'), 'ones']]
 
 
 @pytest.mark.parametrize(
@@ -162,7 +251,7 @@ def test_can_be_inputted_to_torch_dataloader(df):
     DataLoader(ds)
 
 
-def test_column_groups_used(df):
+def testcolumn_groups_used(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
     ds = DFDataset(df, column_groups)
     entry = ds[5]
@@ -186,15 +275,28 @@ def test_slice_works_sampled(df):
     assert all(not (s == df[g].iloc[:10]).all().all() for s, g in zip(slices, column_groups))
 
 
-def test_works_with_torch_dataloader(df):
-    column_groups = [['ones', 'tens'], ['hundreds']]
+@pytest.mark.parametrize('column_groups,single', (
+        ('ones', True),
+        (['ones', 'tens'], True),
+        ([['ones', 'tens'], 'hundreds'], False),
+        ([['ones', 'tens'], ['hundreds']], False),
+))
+def test_works_with_torch_dataloader(df, column_groups,single):
     ds = DFDataset(df, columns=column_groups)
     dl = DataLoader(ds, batch_size=10)
     entries = next(iter(dl))
-    expected = tuple([df[g].iloc[:10] for g in column_groups])
-    assert all(len(entry) == 10 for entry in entries)
-    assert isinstance(expected, tuple)
-    assert all((entry.numpy() == array).all().all() for entry, array in zip(entries, expected))
+
+    if single:
+        expected = df[column_groups].iloc[:10]
+        assert len(entries) == 10
+        assert isinstance(entries, torch.Tensor)
+        assert (entries.numpy() == expected).all().all()
+
+    else:
+        expected = tuple([df[g].iloc[:10] for g in column_groups])
+        assert all(len(entry) == 10 for entry in entries)
+        assert isinstance(entries, list)
+        assert all((entry.numpy() == array).all().all() for entry, array in zip(entries, expected))
 
 
 def test_shuffle_works_with_torch_dataloader(df):

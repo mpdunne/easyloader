@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 from typing import Any, Sequence
 
@@ -13,6 +12,8 @@ class ArrayDataLoader(EasyDataLoader):
     Turn a list of NumPy arrays into a PyTorch Data Loader.
 
     """
+
+    dataset: ArrayDataset
 
     def __init__(self,
                  arrays: Sequence[np.ndarray],
@@ -41,19 +42,3 @@ class ArrayDataLoader(EasyDataLoader):
 
         self.dataset = ArrayDataset(arrays, ids=ids, sample_fraction=sample_fraction,
                                     sample_seed=sample_seed, shuffle_seed=shuffle_seed)
-
-    def __next__(self):
-        """
-        Get the next batch.
-
-        :return: The next batch.
-        """
-        if self.i >= len(self):
-            raise StopIteration
-
-        batch = tuple(
-            torch.Tensor(arr[self.i * self.batch_size: (self.i + 1) * self.batch_size])
-            for arr in self.dataset.arrays)
-
-        self.i += 1
-        return batch
