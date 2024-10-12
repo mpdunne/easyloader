@@ -9,7 +9,7 @@ if os.path.isfile('requirements.txt'):
 
 setup(
     name='easyloader',
-    version='0.0.0.a1',
+    version='0.0.0.a2',
     author='Michael Peter Dunne',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
