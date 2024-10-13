@@ -19,6 +19,7 @@ class ArrayDataLoader(EasyDataLoader):
                  arrays: Sequence[np.ndarray],
                  ids: Sequence[Any] = None,
                  batch_size: int = 1,
+                 grain_size: int = 1,
                  sample_fraction: float = None,
                  shuffle: bool = False,
                  sample_seed: Seedable = None,
@@ -26,10 +27,12 @@ class ArrayDataLoader(EasyDataLoader):
         """
 
         :param arrays: A list of arrays to use for the data loader
+        :param ids: A list of IDs to use for the data points.
         :param batch_size: The batch size.
+        :param grain_size: The grain size.
         :param sample_fraction: Fraction of the dataset to sample.
+        :param shuffle: Whether to shuffle the data each time iter is called.
         :param sample_seed: Seed for random sampling.
-        :param shuffle: Whether to shuffle the data.
         :param shuffle_seed: The seed to be used for shuffling.
         """
 
@@ -40,5 +43,5 @@ class ArrayDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.dataset = ArrayDataset(arrays, ids=ids, sample_fraction=sample_fraction,
+        self.dataset = ArrayDataset(arrays, ids=ids, grain_size=grain_size, sample_fraction=sample_fraction,
                                     sample_seed=sample_seed, shuffle_seed=shuffle_seed)

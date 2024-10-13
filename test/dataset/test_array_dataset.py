@@ -1,4 +1,5 @@
 import copy
+import math
 import numpy as np
 import pytest
 import torch
@@ -117,11 +118,19 @@ def test_sampled_consistent(arrays, seed, consistent):
         ix_sets.append(ixs)
 
 
-@pytest.mark.parametrize('grain_size', (1, 2, 5))
-def test_sample_grained(arrays, grain_size):
-    data = ArrayDataset(arrays, grain_size=grain_size, sample_fraction=0.7)
+@pytest.mark.parametrize('sample_seed', [*range(10)])
+@pytest.mark.parametrize('grain_size', [*range(1, 11)])
+def test_sample_grained(arrays, grain_size, sample_seed):
+    data = ArrayDataset(arrays, grain_size=grain_size, sample_fraction=0.7, sample_seed=sample_seed)
     assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
-    assert len(data.index) == len(data) == 0.7 * len(arrays[0])
+
+    # Size can vary depending on whether the final grain is included in the sample.
+    n_original_grains = int(math.ceil(len(arrays[0]) / grain_size))
+    n_sampled_grains = int(n_original_grains * 0.7)
+
+    lower = grain_size * (n_sampled_grains - 1)
+    upper = grain_size * n_sampled_grains
+    assert lower < len(data.index) == len(data) <= upper
 
 
 def test_shuffle_works(arrays):
@@ -151,13 +160,29 @@ def test_shuffle_changes_index(arrays):
     assert sorted(data.index) == sorted(index_orig)
 
 
-@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
+@pytest.mark.parametrize('grain_size', [*range(1, 11)])
 def test_shuffle_grained(arrays, grain_size):
-    grain_size = 20
     data = ArrayDataset(arrays, grain_size=grain_size)
-    data.shuffle()
-    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
-    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
+
+    # Make a note. Should start unshuffled.
+    assert all(data.grain_index[i + 1] == data.grain_index[i] + 1 for i in range(len(data.grain_index) - 1))
+    grain_index_orig = data.grain_index.copy()
+    index_orig = data.index.copy()
+
+    # Check that the grain index is shuffled. Do it a few times.
+    for _ in range(5):
+        data.shuffle()
+        assert not all(data.grain_index[i + 1] == data.grain_index[i] + 1 for i in range(len(data.grain_index) - 1))
+        assert sorted(grain_index_orig) == sorted(data.grain_index)
+
+        # Check that the index is shuffled also.
+        assert sorted(index_orig) == sorted(data.index)
+        assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data.index) - 1))
+
+        # Check that the index is as expected.
+        expected = [ix for gix in data.grain_index
+                    for ix in range(gix * grain_size, (gix + 1) * grain_size) if ix < len(arrays[0])]
+        assert expected == data.index
 
 
 def test_ids_unspecified(arrays):

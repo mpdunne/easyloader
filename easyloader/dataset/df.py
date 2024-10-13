@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import inspect
 
-from typing import Hashable, Iterable, Optional, Sequence, Union
+from typing import Hashable, Optional, Sequence, Union
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.utils.random import Seedable
