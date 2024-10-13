@@ -14,6 +14,7 @@ class ArrayDataset(EasyDataset):
     def __init__(self,
                  arrays: Union[np.ndarray, Sequence[np.ndarray]],
                  ids: Optional[Sequence[Any]] = None,
+                 grain_size: int = 1,
                  sample_fraction: float = 1.0,
                  sample_seed: Seedable = None,
                  shuffle_seed: Seedable = None):
@@ -21,28 +22,25 @@ class ArrayDataset(EasyDataset):
         Constructor for the ArrayDataset class.
 
         :param arrays: The arrays.
+        :param ids: A list of IDs.
+        :param grain_size: The grain size. Defaults to 1, to not use graining.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
+        :param sample_seed: Seed for shuffling.
         """
-
-        # Initialize the parent class
-        super().__init__(sample_fraction=sample_fraction,
-                         sample_seed=sample_seed,
-                         shuffle_seed=shuffle_seed)
 
         arrays, self._single = self._process_arrays(arrays)
         array_length = self._get_input_data_length(arrays)
         self._ids = self._process_ids(ids, array_length)
 
-        # Perform sampling
-        index = [*range(array_length)]
-        if sample_fraction is not None:
-            index = self.sample_random_state.sample(index, int(sample_fraction * array_length))
-            index = sorted(index)
-            arrays = [arr[index] for arr in arrays]
+        self._arrays = self._arrays_orig = arrays
 
-        self._arrays = arrays
-        self._index = index
+        # Initialize the parent class
+        super().__init__(data_length=array_length,
+                         grain_size=grain_size,
+                         sample_fraction=sample_fraction,
+                         sample_seed=sample_seed,
+                         shuffle_seed=shuffle_seed)
 
     @staticmethod
     def _process_arrays(arrays: Sequence[np.ndarray]) -> Tuple[bool, Sequence[np.ndarray]]:
@@ -92,16 +90,14 @@ class ArrayDataset(EasyDataset):
             raise ValueError('Arrays must all have the same length')
         return array_lengths[0]
 
-    def shuffle(self):
+    def _update_data(self):
         """
-        Shuffle the underlying arrays.
+        This method is called after shuffling and sampling. It is used to make
+        any necessary updates to the underlying data.
 
-        :return: None.
+        :return:
         """
-        ixs = [*range(len(self.index))]
-        self.shuffle_random_state.shuffle(ixs)
-        self._arrays = [arr[ixs] for arr in self._arrays]
-        self._index = list(np.array(self._index)[ixs])
+        self._arrays = [arr[self.index] for arr in self._arrays_orig]
 
     def __getitem__(self, ix: Union[int, slice]):
         """

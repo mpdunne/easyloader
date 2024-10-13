@@ -156,6 +156,13 @@ def test_sampled_consistent(df, seed, consistent):
         ix_sets.append(ixs)
 
 
+@pytest.mark.parametrize('grain_size', (1, 2, 5, 10))
+def test_sample_grained(df, grain_size):
+    data = DFDataset(df, grain_size=grain_size, sample_fraction=0.7)
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert len(data.index) == len(data) == 0.7 * len(df)
+
+
 def test_shuffle_works(df):
     df_orig = df.copy()
     data = DFDataset(df, shuffle_seed=8675309)
@@ -182,6 +189,15 @@ def test_shuffle_changes_index(df):
     data.shuffle()
     assert data.index != index_orig
     assert sorted(data.index) == sorted(index_orig)
+
+
+@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
+def test_shuffle_grained(df, grain_size):
+    grain_size = 20
+    data = DFDataset(df, grain_size=grain_size)
+    data.shuffle()
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
 
 
 def test_ids_unspecified(df):
@@ -251,7 +267,7 @@ def test_can_be_inputted_to_torch_dataloader(df):
     DataLoader(ds)
 
 
-def testcolumn_groups_used(df):
+def test_column_groups_used(df):
     column_groups = [['ones', 'tens'], ['hundreds']]
     ds = DFDataset(df, column_groups)
     entry = ds[5]
