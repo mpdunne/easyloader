@@ -230,6 +230,15 @@ def test_shuffle_changes_ids(h5_file):
     assert list(data.ids) != sorted(list(data.ids))
 
 
+@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
+def test_shuffle_grained(h5_file, grain_size):
+    grain_size = 20
+    data = H5Dataset(h5_file, keys=keys, grain_size=grain_size)
+    data.shuffle()
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
+
+
 def test_can_get_item(h5_file):
     keys = ['key_1', 'key_2']
     ds = H5Dataset(h5_file, keys=keys)
@@ -293,7 +302,6 @@ def test_works_with_torch_dataloader_multi_key(h5_file):
     assert all(len(entry) == 10 for entry in entries)
     assert isinstance(entries, list)
     assert all((entry.numpy() == array).all() for entry, array in zip(entries, expected))
-
 
 
 def test_shuffle_works_with_torch_dataloader(h5_file):

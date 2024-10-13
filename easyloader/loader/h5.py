@@ -3,7 +3,7 @@ from typing import Hashable, Sequence, Union
 
 from easyloader.loader.base import EasyDataLoader
 from easyloader.dataset.h5 import H5Dataset
-from easyloader.utils.typing import Seedable
+from easyloader.utils.random import Seedable
 
 
 class H5DataLoader(EasyDataLoader):

@@ -176,6 +176,15 @@ def test_shuffle_changes_ids(arrays):
     assert sorted(data.ids) == sorted(ids_orig)
 
 
+@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
+def test_shuffle_grained(arrays, grain_size):
+    grain_size = 20
+    data = ArrayDataset(arrays, grain_size=grain_size)
+    data.shuffle()
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
+
+
 def test_can_get_item(arrays):
     ds = ArrayDataset(arrays)
     entries = ds[10]
