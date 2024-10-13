@@ -46,8 +46,8 @@ class EasyDataset(Dataset, ABC):
     @abstractmethod
     def _update_data(self):
         """
-        This method is called after shuffling and sampling. It is used to make
-        any necessary updates to the underlying data.
+        This method is called after shuffling and sampling, or any time the grain index (index) is
+        changed. It is used to make any necessary updates to the underlying data.
 
         :return:
         """
@@ -104,6 +104,8 @@ class EasyDataset(Dataset, ABC):
             self._index = [ix for gix in self._grain_index for
                            ix in range(gix * self._grain_size, (gix + 1) * self._grain_size)]
 
+        self._update_data()
+
     @property
     def index(self):
         """
@@ -129,12 +131,9 @@ class EasyDataset(Dataset, ABC):
             grains = self.sample_random_state.sample(grains, int(sample_fraction * len(grains)))
             self.grain_index = sorted(grains)
 
-        self._update_data()
-
     def shuffle(self):
         """
         Shuffle the underlying data.
 
         """
         self.grain_index = self.shuffle_random_state.sample(self.grain_index, len(self.grain_index))
-        self._update_data()
