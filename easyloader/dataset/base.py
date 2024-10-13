@@ -42,6 +42,7 @@ class EasyDataset(Dataset, ABC):
         self.grain_index = [*range(n_grains)]
 
         self.sample(sample_fraction)
+        self._shuffled = False
 
     @abstractmethod
     def _update_data(self):
@@ -138,3 +139,4 @@ class EasyDataset(Dataset, ABC):
 
         """
         self.grain_index = self.shuffle_random_state.sample(self.grain_index, len(self.grain_index))
+        self._shuffled = True
