@@ -1,5 +1,4 @@
 import h5py
-import math
 import numpy as np
 
 from pathlib import Path
@@ -23,7 +22,7 @@ class H5Dataset(EasyDataset):
                  ids: Union[str, Sequence[Hashable]] = None,
                  grain_size: int = 1,
                  sample_fraction: float = 1.0,
-                 sample_seed: int = None,
+                 sample_seed: Seedable = None,
                  shuffle_seed: Seedable = None):
 
         """
@@ -31,15 +30,12 @@ class H5Dataset(EasyDataset):
 
         :param data_path: The path to the H5 file that you want to load.
         :param keys: The keys that you want to grab.
+        :param ids: A list of IDs.
+        :param grain_size: The grain size. Defaults to 1, to not use graining.
         :param sample_fraction: Fraction of the dataset to sample.
         :param sample_seed: Seed for random sampling.
         :param shuffle_seed: Seed for shuffling.
         """
-
-        # Initialize the parent class
-        super().__init__(sample_fraction=sample_fraction,
-                         sample_seed=sample_seed,
-                         shuffle_seed=shuffle_seed)
 
         h5 = h5py.File(data_path, "r")
 
@@ -47,18 +43,15 @@ class H5Dataset(EasyDataset):
         data_length = self._get_input_data_length(h5, keys)
         self._ids = self._process_ids(ids, data_length, h5)
 
-        # Organise grains & perform sampling
-        n_grains = int(math.ceil(data_length / grain_size))
-        grains = [*range(n_grains)]
-        if sample_fraction is not None:
-            grains = self.sample_random_state.sample(grains, int(sample_fraction * n_grains))
-            grains = sorted(grains)
-
-        self._grain_index = grains
-        self._grain_size = grain_size
-
         self._h5 = h5
         self._keys = keys
+
+        # Initialize the parent class
+        super().__init__(data_length=data_length,
+                         grain_size=grain_size,
+                         sample_fraction=sample_fraction,
+                         sample_seed=sample_seed,
+                         shuffle_seed=shuffle_seed)
 
     @staticmethod
     def _process_keys(keys, available_keys):
@@ -126,14 +119,6 @@ class H5Dataset(EasyDataset):
             raise ValueError('All data must be the same length.')
         return data_lengths[0]
 
-    def shuffle(self):
-        """
-        Shuffle the underlying data
-
-        :return: None.
-        """
-        self.shuffle_random_state.shuffle(self.grain_index)
-
     @property
     def index(self):
         """
@@ -141,16 +126,7 @@ class H5Dataset(EasyDataset):
 
         :return: The index.
         """
-        return [ix for gix in self.grain_index for ix in range(gix * self._grain_size, (gix + 1) * self._grain_size)]
-
-    @property
-    def grain_index(self):
-        """
-        The grain index.
-
-        :return: The grain index.
-        """
-        return self._grain_index
+        return self._index
 
     @property
     def keys(self) -> Sequence[str]:
@@ -160,6 +136,14 @@ class H5Dataset(EasyDataset):
         :return: The keys.
         """
         return self._keys
+
+    def _update_data(self):
+        """
+        For H5 data set, this does nothing as the index is always used directly.
+
+        :return:
+        """
+        pass
 
     def __getitem__(self, ix: Union[int, slice]):
         """

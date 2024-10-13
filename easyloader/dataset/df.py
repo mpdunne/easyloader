@@ -19,6 +19,7 @@ class DFDataset(EasyDataset):
                  df: pd.DataFrame,
                  columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]] = None,
                  ids: Union[str, Sequence[Hashable]] = None,
+                 grain_size: int = 1,
                  sample_fraction: float = 1.0,
                  sample_seed: Seedable = None,
                  shuffle_seed: Seedable = None):
@@ -34,23 +35,17 @@ class DFDataset(EasyDataset):
         :param shuffle_seed: Seed for shuffling.
         """
 
-        # Initialize the parent class
-        super().__init__(sample_fraction=sample_fraction,
-                         sample_seed=sample_seed,
-                         shuffle_seed=shuffle_seed)
-
         self._column_groups, self._single = self._process_columns(columns, df)
         self._ids = self._process_ids(ids, df)
 
-        # Perform sampling
-        index = [*range(len(df))]
-        if sample_fraction is not None:
-            index = self.sample_random_state.sample(index, int(sample_fraction * len(df)))
-            index = sorted(index)
-            df = df.iloc[index]
+        self._df = self._df_orig = df
 
-        self._index = index
-        self._df = df
+        # Initialize the parent class
+        super().__init__(data_length=len(df),
+                         grain_size=grain_size,
+                         sample_fraction=sample_fraction,
+                         sample_seed=sample_seed,
+                         shuffle_seed=shuffle_seed)
 
     @staticmethod
     def _process_columns(columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]],
@@ -139,17 +134,6 @@ class DFDataset(EasyDataset):
         else:
             return df.index
 
-    def shuffle(self):
-        """
-        Shuffle the underlying DF.
-
-        :return: None.
-        """
-        ixs = [*range(len(self._df))]
-        self.shuffle_random_state.shuffle(ixs)
-        self._index = list(np.array(self._index)[ixs])
-        self._df = self._df.iloc[ixs]
-
     @property
     def column_groups(self):
         """
@@ -172,6 +156,15 @@ class DFDataset(EasyDataset):
             return x.to_numpy()
         else:
             return np.array(x)
+
+    def _update_data(self):
+        """
+        This method is called after shuffling and sampling. It is used to make
+        any necessary updates to the underlying data.
+
+        :return:
+        """
+        self._df = self._df_orig.iloc[self._index]
 
     def __getitem__(self, ix: Union[int, slice]):
         """

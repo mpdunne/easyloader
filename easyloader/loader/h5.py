@@ -3,6 +3,7 @@ from typing import Hashable, Sequence, Union
 
 from easyloader.loader.base import EasyDataLoader
 from easyloader.dataset.h5 import H5Dataset
+from easyloader.utils.typing import Seedable
 
 
 class H5DataLoader(EasyDataLoader):
@@ -22,8 +23,8 @@ class H5DataLoader(EasyDataLoader):
                  grain_size: int = 1,
                  sample_fraction: float = None,
                  shuffle: bool = False,
-                 sample_seed: int = None,
-                 shuffle_seed: bool = None):
+                 sample_seed: Seedable = None,
+                 shuffle_seed: Seedable = None):
         """
         Constructor for the H5DtaLoader class
 
