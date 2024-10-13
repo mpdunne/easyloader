@@ -39,7 +39,7 @@ def test_args_passed_to_dataset_class(arrays):
         shuffle_seed = 5318008
         ids = [*range(len(arrays[0]))]
         ArrayDataLoader(arrays, ids=ids, shuffle_seed=shuffle_seed, sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockArrayDataset.assert_called_once_with(arrays, ids=ids, shuffle_seed=shuffle_seed,
+        MockArrayDataset.assert_called_once_with(arrays, ids=ids, grain_size=1, shuffle_seed=shuffle_seed,
                                               sample_fraction=sample_fraction, sample_seed=sample_seed)
 
 
@@ -108,7 +108,6 @@ def test_sample_consistent(arrays):
     batches_joined2 = deepcopy(helper_iterate_all_and_concatenate(dl, batch_size))
     for b1, b2 in zip(batches_joined1, batches_joined2):
         assert (b1 == b2).all()
-
 
 
 def test_len_is_n_batches(arrays):

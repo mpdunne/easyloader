@@ -36,7 +36,7 @@ def test_args_passed_to_dataset_class(df):
         column_groups = [['ones', 'tens'], ['hundreds']]
         DFDataLoader(df, columns=column_groups, ids=id_column, shuffle_seed=shuffle_seed,
                      sample_fraction=sample_fraction, sample_seed=sample_seed)
-        MockDFDataset.assert_called_once_with(df, columns=column_groups, ids=id_column,
+        MockDFDataset.assert_called_once_with(df, columns=column_groups, ids=id_column, grain_size=1,
                                               shuffle_seed=shuffle_seed, sample_fraction=sample_fraction,
                                               sample_seed=sample_seed)
 

@@ -9,8 +9,9 @@ if os.path.isfile('requirements.txt'):
 
 setup(
     name='easyloader',
-    version='0.0.0.c0',
+    version='0.0.0.b4',
     author='Michael Peter Dunne',
+    description='Easily turn DFs, Arrays, and H5 files into PyTorch DataLoaders.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     include_package_data=True,

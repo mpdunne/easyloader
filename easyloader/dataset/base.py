@@ -102,7 +102,8 @@ class EasyDataset(Dataset, ABC):
             self._index = self._grain_index
         else:
             self._index = [ix for gix in self._grain_index for
-                           ix in range(gix * self._grain_size, (gix + 1) * self._grain_size)]
+                           ix in range(gix * self._grain_size, (gix + 1) * self._grain_size)
+                           if ix < self._data_length]
 
         self._update_data()
 
