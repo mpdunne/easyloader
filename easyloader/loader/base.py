@@ -21,7 +21,7 @@ class EasyDataLoader(ABC):
                  sample_fraction: float = None,
                  shuffle: bool = False,
                  sample_seed: Seedable = None,
-                 shuffle_seed: Seedable = None,):
+                 shuffle_seed: Seedable = None):
         """
         Constructor for the EasyDataLoader class Interface.
 

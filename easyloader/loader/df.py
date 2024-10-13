@@ -20,6 +20,7 @@ class DFDataLoader(EasyDataLoader):
                  columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]] = None,
                  ids: Union[str, Sequence[Hashable]] = None,
                  batch_size: int = 1,
+                 grain_size: int = 1,
                  sample_fraction: float = None,
                  shuffle: bool = False,
                  sample_seed: Seedable = None,
@@ -31,8 +32,9 @@ class DFDataLoader(EasyDataLoader):
         :param columns: The column groups to use.
         :param ids: The column to use as IDs. If not set, use the DF index.
         :param batch_size: The batch size.
+        :param batch_size: The grain size.
         :param sample_fraction: Fraction of the dataset to sample.
-        :param shuffle: Whether to shuffle the data.
+        :param shuffle: Whether to shuffle each time iter is called.
         :param sample_seed: Seed for random sampling.
         :param shuffle_seed: The seed to be used for shuffling.
         """
@@ -44,5 +46,5 @@ class DFDataLoader(EasyDataLoader):
                          shuffle=shuffle,
                          shuffle_seed=shuffle_seed)
 
-        self.dataset = DFDataset(df, ids=ids, columns=columns, sample_seed=sample_seed,
+        self.dataset = DFDataset(df, ids=ids, columns=columns, grain_size=grain_size, sample_seed=sample_seed,
                                  sample_fraction=sample_fraction, shuffle_seed=shuffle_seed)

@@ -30,10 +30,12 @@ class H5DataLoader(EasyDataLoader):
 
         :param data_path: The path to the H5 file that you want to use.
         :param keys: The keys that you want to grab.
+        :param ids: Either an ID key or a list of IDs to use for the data points.
         :param batch_size: The batch size.
+        :param grain_size: The grain size.
         :param sample_fraction: Fraction of the dataset to sample.
+        :param shuffle: Whether to shuffle each time iter is called.
         :param sample_seed: Seed for random sampling.
-        :param shuffle: Whether to shuffle the data.
         :param shuffle_seed: The seed to be used for shuffling.
         """
 
