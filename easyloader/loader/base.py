@@ -2,14 +2,13 @@ import torch
 import numpy as np
 
 from abc import ABC
-from torch.utils.data import DataLoader
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.utils.random import Seedable
 from easyloader.utils.batch import get_n_batches
 
 
-class EasyDataLoader(DataLoader, ABC):
+class EasyDataLoader(ABC):
     """
     Interface class for EasyLoader dataloaders with common functionality for sampling and indexing.
     """
@@ -92,7 +91,7 @@ class EasyDataLoader(DataLoader, ABC):
         if isinstance(result, np.ndarray):
             batch = torch.Tensor(result)
         else:
-            batch = tuple(torch.Tensor(arr) for arr in result)
+            batch = [torch.Tensor(arr) for arr in result]
 
         self.i += 1
         return batch
