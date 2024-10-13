@@ -8,6 +8,7 @@ from easyloader.dataset.base import EasyDataset
 from easyloader.utils.grains import grab_slices_from_grains
 from easyloader.utils.random import Seedable
 from easyloader.utils.typing import is_hashable
+from easyloader.utils.slices import merge_neighbouring_slices
 
 
 class H5Dataset(EasyDataset):
@@ -159,6 +160,12 @@ class H5Dataset(EasyDataset):
 
         elif isinstance(ix, slice):
             ix_slices = grab_slices_from_grains(self.grain_index, self._grain_size, ix.start, ix.stop)
+
+            # The chances of having any neighbouring slices when shuffled is minimal, so avoid this slight overhead.
+            # Otherwise, this should be a quick and easy way to access the H5 as efficiently as possible.
+            if not self._shuffled:
+                ix_slices = merge_neighbouring_slices(ix_slices)
+
             for key in self.keys:
                 values.append(np.concatenate([self._h5[key][ix_slice] for ix_slice in ix_slices]))
 
