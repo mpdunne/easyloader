@@ -49,13 +49,13 @@ class H5Dataset(EasyDataset):
 
         # Organise grains & perform sampling
         n_grains = int(math.ceil(data_length / grain_size))
-        self.grain_size = grain_size
-        self.n_grains = n_grains
         grains = [*range(n_grains)]
         if sample_fraction is not None:
             grains = self.sample_random_state.sample(grains, int(sample_fraction * n_grains))
             grains = sorted(grains)
+
         self._grain_index = grains
+        self._grain_size = grain_size
 
         self._h5 = h5
         self._keys = keys
@@ -141,7 +141,7 @@ class H5Dataset(EasyDataset):
 
         :return: The index.
         """
-        return [ix for gix in self.grain_index for ix in range(gix * self.grain_size, (gix + 1) * self.grain_size)]
+        return [ix for gix in self.grain_index for ix in range(gix * self._grain_size, (gix + 1) * self._grain_size)]
 
     @property
     def grain_index(self):
@@ -174,7 +174,7 @@ class H5Dataset(EasyDataset):
                 values.append(self._h5[key][self.index[ix]])
 
         elif isinstance(ix, slice):
-            ix_slices = grab_slices_from_grains(self.grain_index, self.grain_size, ix.start, ix.stop)
+            ix_slices = grab_slices_from_grains(self.grain_index, self._grain_size, ix.start, ix.stop)
             for key in self.keys:
                 values.append(np.concatenate([self._h5[key][ix_slice] for ix_slice in ix_slices]))
 

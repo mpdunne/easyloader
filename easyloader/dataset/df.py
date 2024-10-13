@@ -43,14 +43,14 @@ class DFDataset(EasyDataset):
         self._ids = self._process_ids(ids, df)
 
         # Perform sampling
-        self._index = [*range(len(df))]
+        index = [*range(len(df))]
         if sample_fraction is not None:
-            index = self.sample_random_state.sample(self._index, int(sample_fraction * len(df)))
+            index = self.sample_random_state.sample(index, int(sample_fraction * len(df)))
             index = sorted(index)
-            self._index = index
-            self._df = df.iloc[self._index]
-        else:
-            self._df = df
+            df = df.iloc[index]
+
+        self._index = index
+        self._df = df
 
     @staticmethod
     def _process_columns(columns: Optional[Union[Sequence[str], Sequence[Sequence[str]]]],

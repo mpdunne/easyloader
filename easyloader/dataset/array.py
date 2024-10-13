@@ -39,9 +39,9 @@ class ArrayDataset(EasyDataset):
         if sample_fraction is not None:
             index = self.sample_random_state.sample(index, int(sample_fraction * array_length))
             index = sorted(index)
-            self._arrays = [arr[index] for arr in arrays]
-        else:
-            self._arrays = arrays
+            arrays = [arr[index] for arr in arrays]
+
+        self._arrays = arrays
         self._index = index
 
     @staticmethod
