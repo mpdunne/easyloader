@@ -117,6 +117,13 @@ def test_sampled_consistent(arrays, seed, consistent):
         ix_sets.append(ixs)
 
 
+@pytest.mark.parametrize('grain_size', (1, 2, 5))
+def test_sample_grained(arrays, grain_size):
+    data = ArrayDataset(arrays, grain_size=grain_size, sample_fraction=0.7)
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert len(data.index) == len(data) == 0.7 * len(arrays[0])
+
+
 def test_shuffle_works(arrays):
     data = ArrayDataset(arrays)
     data.shuffle()
@@ -142,6 +149,15 @@ def test_shuffle_changes_index(arrays):
     data.shuffle()
     assert data.index != index_orig
     assert sorted(data.index) == sorted(index_orig)
+
+
+@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
+def test_shuffle_grained(arrays, grain_size):
+    grain_size = 20
+    data = ArrayDataset(arrays, grain_size=grain_size)
+    data.shuffle()
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
 
 
 def test_ids_unspecified(arrays):
@@ -174,15 +190,6 @@ def test_shuffle_changes_ids(arrays):
     data.shuffle()
     assert data.ids != ids_orig
     assert sorted(data.ids) == sorted(ids_orig)
-
-
-@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
-def test_shuffle_grained(arrays, grain_size):
-    grain_size = 20
-    data = ArrayDataset(arrays, grain_size=grain_size)
-    data.shuffle()
-    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
-    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
 
 
 def test_can_get_item(arrays):

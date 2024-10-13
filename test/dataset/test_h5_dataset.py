@@ -146,6 +146,15 @@ def test_sampled_consistent(h5_file, seed, consistent):
         ix_sets.append(ixs)
 
 
+@pytest.mark.parametrize('grain_size', (1, 2, 5))
+def test_sample_grained(h5_file, grain_size):
+    keys = ['key_1', 'key_2']
+    h5_orig = h5py.File(h5_file)
+    data = H5Dataset(h5_file, keys=keys, grain_size=grain_size, sample_fraction=0.7)
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert len(data.index) == len(data) == 0.7 * len(h5_orig[keys[0]])
+
+
 def test_shuffle_works(h5_file):
     keys = ['key_1', 'key_2']
     data = H5Dataset(h5_file, keys=keys, shuffle_seed=8675309)
@@ -175,6 +184,16 @@ def test_shuffle_changes_index(h5_file):
     data.shuffle()
     assert data.index != index_orig
     assert sorted(data.index) == sorted(index_orig)
+
+
+@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
+def test_shuffle_grained(h5_file, grain_size):
+    grain_size = 20
+    keys = ['key_1', 'key_2']
+    data = H5Dataset(h5_file, keys=keys, grain_size=grain_size)
+    data.shuffle()
+    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
+    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
 
 
 def test_id_key_unspecified(h5_file):
@@ -228,15 +247,6 @@ def test_shuffle_changes_ids(h5_file):
     data = H5Dataset(h5_file, keys=keys, ids=id_key, shuffle_seed=8675309)
     data.shuffle()
     assert list(data.ids) != sorted(list(data.ids))
-
-
-@pytest.mark.parametrize('grain_size', (1, 2, 5, 10, 100, 100000))
-def test_shuffle_grained(h5_file, grain_size):
-    grain_size = 20
-    data = H5Dataset(h5_file, keys=keys, grain_size=grain_size)
-    data.shuffle()
-    assert all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size != 0)
-    assert not all(data.index[i + 1] == data.index[i] + 1 for i in range(len(data) - 1) if (i + 1) % grain_size == 0)
 
 
 def test_can_get_item(h5_file):
