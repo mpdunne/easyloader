@@ -1,12 +1,8 @@
-import numpy as np
-import torch
-
 from pathlib import Path
 from typing import Hashable, Sequence, Union
 
 from easyloader.loader.base import EasyDataLoader
 from easyloader.dataset.h5 import H5Dataset
-from easyloader.utils.grains import grab_slices_from_grains
 
 
 class H5DataLoader(EasyDataLoader):
@@ -49,24 +45,3 @@ class H5DataLoader(EasyDataLoader):
 
         self.dataset = H5Dataset(data_path, keys=keys, ids=ids, grain_size=grain_size, shuffle_seed=shuffle_seed,
                                  sample_fraction=sample_fraction, sample_seed=sample_seed)
-
-    def __next__(self):
-        """
-        Get the next batch.
-
-        :return: The next batch.
-        """
-        if self.i >= len(self):
-            raise StopIteration
-
-        batch_start_ix = self.i * self.batch_size
-        batch_end_ix = (self.i + 1) * self.batch_size
-
-        result = self.dataset[batch_start_ix: batch_end_ix]
-        if isinstance(result, np.ndarray):
-            batch = torch.Tensor(result)
-        else:
-            batch = tuple(torch.Tensor(arr) for arr in result)
-
-        self.i += 1
-        return batch

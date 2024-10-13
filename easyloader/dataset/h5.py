@@ -42,32 +42,10 @@ class H5Dataset(EasyDataset):
                          shuffle_seed=shuffle_seed)
 
         h5 = h5py.File(data_path, "r")
-        self.h5 = h5
-        self._single, keys = self._process_keys(keys, h5.keys())
-        self._keys = keys
 
-        # Check lengths
-        data_lengths = [len(h5[key]) for key in keys]
-        if len(set(data_lengths)) != 1:
-            raise ValueError('All data must be the same length.')
-        data_length = data_lengths[0]
-
-        # Organise the IDs
-        if ids is not None:
-            if isinstance(ids, str):
-                if ids not in h5.keys():
-                    raise ValueError(f'Specified id key {ids} not present in H5 file.')
-                if len(h5[ids]) != data_length:
-                    raise ValueError(f'Length of data for ID key {ids} does not match that of other data.')
-                self._ids = h5[ids][:]
-            elif isinstance(ids, Sequence):
-                if len(ids) != data_length:
-                    raise ValueError('If specified as a sequence, IDs must have the same length as the H5 data.')
-                self._ids = ids
-            else:
-                raise TypeError('If set, IDs must either be a sequence or a key contained in the H5 file.')
-        else:
-            self._ids = [*range(data_length)]
+        keys, self._single = self._process_keys(keys, h5.keys())
+        data_length = self._get_input_data_length(h5, keys)
+        self._ids = self._process_ids(ids, data_length, h5)
 
         # Organise grains & perform sampling
         n_grains = int(math.ceil(data_length / grain_size))
@@ -78,6 +56,9 @@ class H5Dataset(EasyDataset):
             grains = self.sample_random_state.sample(grains, int(sample_fraction * n_grains))
             grains = sorted(grains)
         self._grain_index = grains
+
+        self._h5 = h5
+        self._keys = keys
 
     @staticmethod
     def _process_keys(keys, available_keys):
@@ -104,7 +85,46 @@ class H5Dataset(EasyDataset):
         if len(missing_keys) != 0:
             raise ValueError('Missing or invalid keys: ' + ', '.join(missing_keys))
         
-        return single, keys
+        return keys, single
+
+    @staticmethod
+    def _process_ids(ids: Union[str, Sequence[Hashable]], data_length: int, h5: h5py.File) -> Sequence[Hashable]:
+        """
+        Process the IDs, given as either None, columns, or a list.
+
+        :param ids: The provided IDs.
+        :param data_length: The length of the data that we're interested in.
+        :param h5: The h5 File object.
+        :return: A list of IDs.
+        """
+        if ids is not None:
+            if isinstance(ids, str):
+                if ids not in h5.keys():
+                    raise ValueError(f'Specified id key {ids} not present in H5 file.')
+                if len(h5[ids]) != data_length:
+                    raise ValueError(f'Length of data for ID key {ids} does not match that of other data.')
+                return h5[ids][:]
+            elif isinstance(ids, Sequence):
+                if len(ids) != data_length:
+                    raise ValueError('If specified as a sequence, IDs must have the same length as the H5 data.')
+                return ids
+            else:
+                raise TypeError('If set, IDs must either be a sequence or a key contained in the H5 file.')
+        else:
+            return [*range(data_length)]
+
+    @staticmethod
+    def _get_input_data_length(h5, keys) -> int:
+        """
+        Get the length of the inputted data.
+
+        :return: The length
+        """
+        # Check lengths
+        data_lengths = [len(h5[key]) for key in keys]
+        if len(set(data_lengths)) != 1:
+            raise ValueError('All data must be the same length.')
+        return data_lengths[0]
 
     def shuffle(self):
         """
@@ -151,12 +171,12 @@ class H5Dataset(EasyDataset):
 
         if isinstance(ix, int):
             for key in self.keys:
-                values.append(self.h5[key][self.index[ix]])
+                values.append(self._h5[key][self.index[ix]])
 
         elif isinstance(ix, slice):
             ix_slices = grab_slices_from_grains(self.grain_index, self.grain_size, ix.start, ix.stop)
             for key in self.keys:
-                values.append(np.concatenate([self.h5[key][ix_slice] for ix_slice in ix_slices]))
+                values.append(np.concatenate([self._h5[key][ix_slice] for ix_slice in ix_slices]))
 
         else:
             raise ValueError('Index ix must either be an int or a slice.')

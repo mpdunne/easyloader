@@ -81,7 +81,7 @@ def test_process_single_arrays_single_output(arrays):
 def test_not_sampled_if_not_asked(arrays, sample_seed):
     original_arrays = copy.deepcopy(arrays)
     data = ArrayDataset(arrays, sample_seed=sample_seed)
-    for array, original_array in zip(data.arrays, original_arrays):
+    for array, original_array in zip(data._arrays, original_arrays):
         assert (array == original_array).all()
 
 
@@ -92,7 +92,7 @@ def test_sampled_correct_length_and_ordered(arrays, sample_seed):
     # No seed, but a sample fraction.
     original_arrays = copy.deepcopy(arrays)
     data = ArrayDataset(arrays, sample_fraction=0.7, sample_seed=sample_seed)
-    for array, original_array in zip(data.arrays, original_arrays):
+    for array, original_array in zip(data._arrays, original_arrays):
         assert array.shape[1:] == original_array.shape[1:]
         assert len(array) == len(data) == len(original_array) * 0.7
         assert all((array[i] <= array[i + 1]).all() for i in range(len(array) - 1))
@@ -120,7 +120,7 @@ def test_sampled_consistent(arrays, seed, consistent):
 def test_shuffle_works(arrays):
     data = ArrayDataset(arrays)
     data.shuffle()
-    for array_original, array_new in zip(arrays, data.arrays):
+    for array_original, array_new in zip(arrays, data._arrays):
         helper_check_shuffled_arrays_equal(array_original, array_new)
         assert array_original.shape == array_new.shape
         assert not (array_original == array_new).all()
@@ -129,11 +129,11 @@ def test_shuffle_works(arrays):
 def test_shuffle_consistent(arrays):
     data = ArrayDataset(arrays, shuffle_seed=8675309)
     data.shuffle()
-    array_sets_first = deepcopy(data.arrays)
+    array_sets_first = deepcopy(data._arrays)
     for _ in range(4):
         data = ArrayDataset(arrays, shuffle_seed=8675309)
         data.shuffle()
-        assert all((arr == arr_first).all() for arr, arr_first in zip(data.arrays, array_sets_first))
+        assert all((arr == arr_first).all() for arr, arr_first in zip(data._arrays, array_sets_first))
 
 
 def test_shuffle_changes_index(arrays):

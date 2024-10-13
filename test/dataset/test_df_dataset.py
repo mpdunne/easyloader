@@ -121,8 +121,8 @@ def test_not_sampled_if_not_asked(df, sample_seed):
     original_df = df.copy()
     # There should be no sampling, even if we give it a seed.
     data = DFDataset(df, sample_seed=sample_seed)
-    assert len(data.df) == len(data) == len(original_df)
-    assert (data.df.index == original_df.index).all()
+    assert len(data._df) == len(data) == len(original_df)
+    assert (data._df.index == original_df.index).all()
 
 
 @pytest.mark.parametrize(
@@ -132,8 +132,8 @@ def test_sampled_correct_length_and_ordered(df, sample_seed):
     # No seed, but a sample fraction.
     original_df = df.copy()
     data = DFDataset(df, sample_seed=sample_seed, sample_fraction=0.7)
-    assert len(data.df) == len(data) == len(original_df) * 0.7
-    ixs = list(data.df.index)
+    assert len(data._df) == len(data) == len(original_df) * 0.7
+    ixs = list(data._df.index)
     assert all(ixs[i] <= ixs[i + 1] for i in range(len(ixs) - 1))
 
 
@@ -148,10 +148,10 @@ def test_sampled_correct_length_and_ordered(df, sample_seed):
 )
 def test_sampled_consistent(df, seed, consistent):
     data = DFDataset(df, sample_seed=seed, sample_fraction=0.7)
-    ix_sets = [list(data.df.index)]
+    ix_sets = [list(data._df.index)]
     for _ in range(4):
         data = DFDataset(df, sample_seed=seed, sample_fraction=0.7)
-        ixs = list(data.df.index)
+        ixs = list(data._df.index)
         assert all((ixs == ixsc) == consistent for ixsc in ix_sets)
         ix_sets.append(ixs)
 
@@ -159,20 +159,20 @@ def test_sampled_consistent(df, seed, consistent):
 def test_shuffle_works(df):
     df_orig = df.copy()
     data = DFDataset(df, shuffle_seed=8675309)
-    assert (data.df.index == df_orig.index).all().all()
-    assert (data.df == df_orig).all().all()
+    assert (data._df.index == df_orig.index).all().all()
+    assert (data._df == df_orig).all().all()
     data.shuffle()
-    assert not (data.df.index == df_orig.index).all().all()
-    assert set(data.df.index) == set(df_orig.index)
-    assert len(data.df) == len(df_orig)
+    assert not (data._df.index == df_orig.index).all().all()
+    assert set(data._df.index) == set(df_orig.index)
+    assert len(data._df) == len(df_orig)
 
 
 def test_shuffle_consistent(df):
     data = DFDataset(df, shuffle_seed=8675309)
-    ix_sets = [list(data.df.index)]
+    ix_sets = [list(data._df.index)]
     for _ in range(4):
         data = DFDataset(df, shuffle_seed=8675309)
-        ixs = list(data.df.index)
+        ixs = list(data._df.index)
         assert all((ixs == ixsc) for ixsc in ix_sets)
 
 
@@ -186,7 +186,7 @@ def test_shuffle_changes_index(df):
 
 def test_ids_unspecified(df):
     data = DFDataset(df, shuffle_seed=8675309)
-    assert (data.ids == data.df.index).all()
+    assert (data.ids == data._df.index).all()
 
 
 def test_ids_specified_as_column(df):
@@ -224,9 +224,9 @@ def test_shuffle_changes_ids(df):
 def test_duplicate_ixs_okay(df):
     double_df = pd.concat([df, df])
     data = DFDataset(double_df, shuffle_seed=8675309, ids='id', sample_fraction=0.7)
-    assert len(data.df) == 0.7 * len(double_df)
+    assert len(data._df) == 0.7 * len(double_df)
     data.shuffle()
-    assert len(data.df) == 0.7 * len(double_df)
+    assert len(data._df) == 0.7 * len(double_df)
 
 
 def test_can_get_item(df):

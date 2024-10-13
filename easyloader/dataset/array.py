@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Any, Sequence, Union
+from typing import Any, Hashable, Optional, Sequence, Tuple, Union
 
 from easyloader.dataset.base import EasyDataset
 from easyloader.utils.random import Seedable
@@ -13,7 +13,7 @@ class ArrayDataset(EasyDataset):
 
     def __init__(self,
                  arrays: Union[np.ndarray, Sequence[np.ndarray]],
-                 ids: Sequence[Any] = None,
+                 ids: Optional[Sequence[Any]] = None,
                  sample_fraction: float = 1.0,
                  sample_seed: Seedable = None,
                  shuffle_seed: Seedable = None):
@@ -30,34 +30,28 @@ class ArrayDataset(EasyDataset):
                          sample_seed=sample_seed,
                          shuffle_seed=shuffle_seed)
 
-        self._single, arrays = self._process_arrays(arrays)
-
-        # Check lengths
-        array_lengths = [len(arr) for arr in arrays]
-        if len(set(array_lengths)) != 1:
-            raise ValueError('Arrays must all have the same length')
-        array_length = array_lengths[0]
-
-        # Organise the IDs
-        index = [*range(array_length)]
-        if ids is not None:
-            if len(ids) != array_length:
-                raise ValueError('ID list must be the same length as the arrays.')
-            self._ids = ids
-        else:
-            self._ids = index.copy()
+        arrays, self._single = self._process_arrays(arrays)
+        array_length = self._get_input_data_length(arrays)
+        self._ids = self._process_ids(ids, array_length)
 
         # Perform sampling
+        index = [*range(array_length)]
         if sample_fraction is not None:
             index = self.sample_random_state.sample(index, int(sample_fraction * array_length))
             index = sorted(index)
-            self.arrays = [arr[index] for arr in arrays]
+            self._arrays = [arr[index] for arr in arrays]
         else:
-            self.arrays = arrays
+            self._arrays = arrays
         self._index = index
 
     @staticmethod
-    def _process_arrays(arrays):
+    def _process_arrays(arrays: Sequence[np.ndarray]) -> Tuple[bool, Sequence[np.ndarray]]:
+        """
+        Check the consistency of the arrays, and decide whether to treat the output as single or multi.
+
+        :param arrays: The inputted arrays.
+        :return:
+        """
         if isinstance(arrays, np.ndarray):
             arrays = [arrays]
             single = True
@@ -66,7 +60,37 @@ class ArrayDataset(EasyDataset):
                 raise TypeError('Data must be inputted as either a single array or a sequence of arrays.')
             single = False
         
-        return single, arrays
+        return arrays, single
+
+    @staticmethod
+    def _process_ids(ids: Optional[Sequence[Any]], array_length: int) -> Sequence[Hashable]:
+        """
+        Process the IDs, given as either None, or a list.
+
+        :param ids: The Ids.
+        :param array_length: The length of the array used for this Dataset.
+        :return: A list of IDs.
+        """
+        # Organise the IDs
+        if ids is not None:
+            if len(ids) != array_length:
+                raise ValueError('ID list must be the same length as the arrays.')
+            return ids
+        else:
+            return [*range(array_length)]
+
+    @staticmethod
+    def _get_input_data_length(arrays) -> int:
+        """
+        Get the length of the inputted data.
+
+        :return: The length.
+        """
+        # Check lengths
+        array_lengths = [len(arr) for arr in arrays]
+        if len(set(array_lengths)) != 1:
+            raise ValueError('Arrays must all have the same length')
+        return array_lengths[0]
 
     def shuffle(self):
         """
@@ -76,7 +100,7 @@ class ArrayDataset(EasyDataset):
         """
         ixs = [*range(len(self.index))]
         self.shuffle_random_state.shuffle(ixs)
-        self.arrays = [arr[ixs] for arr in self.arrays]
+        self._arrays = [arr[ixs] for arr in self._arrays]
         self._index = list(np.array(self._index)[ixs])
 
     def __getitem__(self, ix: Union[int, slice]):
@@ -86,6 +110,6 @@ class ArrayDataset(EasyDataset):
         :return: A subset of items.
         """
         if self._single:
-            return self.arrays[0][ix]
+            return self._arrays[0][ix]
         else:
-            return tuple([arr[ix] for arr in self.arrays])
+            return tuple([arr[ix] for arr in self._arrays])
