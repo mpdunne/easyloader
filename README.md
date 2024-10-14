@@ -7,7 +7,7 @@ PyTorch DataLoaders and Datasets are wonderfully convenient tools for managing d
 
 However they're not always fast! Torch DataLoaders load data one sample at a time and concatenate the result, which can be useful for distributed training tasks and for loading files from disk, but is generally inefficient. For heavy data sets data retrieval can end up taking a sizeable (and unnecessary) chunk of training time. 
 
-**EasyLoader** provides a set of PyTorch data sets and ready to use data loader classes that efficiently load data orders of magnitude faster than PyTorch DataLoaders alone, removing hidden data bottlenecks from model training. They also contain a selection a few features to make data loading pain-free! 
+**EasyLoader** provides a set of PyTorch data sets and ready to use data loader classes that efficiently load data orders of magnitude faster than PyTorch DataLoaders alone, removing hidden data bottlenecks from model training. They also contain a few extra features to make data loading pain-free! 
 
 ## Usage
 
@@ -21,7 +21,7 @@ from easyloader.dataset import ArrayDataset
 from easyloader.loader import ArrayDataLoader
 
 ds = DFDataset(df, arrays=[array_1, array_2])
-values = ds[:10]
+X = ds[:10]
 
 dl = DFDataLoader(df, arrays=array_1)
 for batch in dl:
@@ -36,7 +36,7 @@ from easyloader.dataset import DFDataset
 from easyloader.loader import DFDataLoader
 
 ds = DFDataset(df, columns=[['column_1', 'column_2'], 'column_3'])
-values = ds[:10]
+X, y = ds[:10]
 
 dl = DFDataLoader(df, columns=['column_1', 'column_2'], batch_size=10)
 for batch in dl:
@@ -55,7 +55,7 @@ from easyloader.loader import H5DataLoader
 ds = H5Dataset(h5_file, keys=['key_1', 'key_2'])
 values = ds[:10]
 
-dl = H5DataLoader(df, keys='key_1', batch_size=10)
+dl = H5DataLoader(h5_file, keys='key_1', batch_size=10)
 for batch in dl:
     print(batch)
 ```
