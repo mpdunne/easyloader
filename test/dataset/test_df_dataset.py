@@ -133,8 +133,8 @@ def test_sampled_correct_length_and_ordered(df, sample_seed):
     # No seed, but a sample fraction.
     original_df = df.copy()
     data = DFDataset(df, sample_seed=sample_seed, sample_fraction=0.7)
-    assert len(data._df) == len(data) == len(original_df) * 0.7
-    ixs = list(data._df.index)
+    assert len(data.index) == len(data) == len(original_df) * 0.7
+    ixs = list(data._groups[0].index)
     assert all(ixs[i] <= ixs[i + 1] for i in range(len(ixs) - 1))
 
 
@@ -149,10 +149,10 @@ def test_sampled_correct_length_and_ordered(df, sample_seed):
 )
 def test_sampled_consistent(df, seed, consistent):
     data = DFDataset(df, sample_seed=seed, sample_fraction=0.7)
-    ix_sets = [list(data._df.index)]
+    ix_sets = [list(data._groups[0].index)]
     for _ in range(4):
         data = DFDataset(df, sample_seed=seed, sample_fraction=0.7)
-        ixs = list(data._df.index)
+        ixs = list(data._groups[0].index)
         assert all((ixs == ixsc) == consistent for ixsc in ix_sets)
         ix_sets.append(ixs)
 
@@ -175,12 +175,12 @@ def test_sample_grained(df, grain_size, sample_seed):
 def test_shuffle_works(df):
     df_orig = df.copy()
     data = DFDataset(df, shuffle_seed=8675309)
-    assert (data._df.index == df_orig.index).all().all()
-    assert (data._df == df_orig).all().all()
+    assert (data.index == list(data._groups[0].index) == list(df_orig.index))
+    assert (data._groups[0] == df_orig).all().all()
     data.shuffle()
-    assert not (data._df.index == df_orig.index).all().all()
-    assert set(data._df.index) == set(df_orig.index)
-    assert len(data._df) == len(df_orig)
+    assert not (data.index == list(data._groups[0].index) == list(df_orig.index))
+    assert set(data._groups[0].index) == set(df_orig.index)
+    assert len(data._groups[0]) == len(df_orig)
 
 
 def test_shuffle_consistent(df):
@@ -265,9 +265,9 @@ def test_shuffle_changes_ids(df):
 def test_duplicate_ixs_okay(df):
     double_df = pd.concat([df, df])
     data = DFDataset(double_df, shuffle_seed=8675309, ids='id', sample_fraction=0.7)
-    assert len(data._df) == 0.7 * len(double_df)
+    assert len(data._groups[0]) == 0.7 * len(double_df)
     data.shuffle()
-    assert len(data._df) == 0.7 * len(double_df)
+    assert len(data._groups[0]) == 0.7 * len(double_df)
 
 
 def test_can_get_item(df):
