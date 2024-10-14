@@ -164,7 +164,7 @@ class DFDataset(EasyDataset):
 
         :return:
         """
-        self._df = self._df_orig.iloc[self._index]
+        self._groups = [self._df_orig[g].iloc[self._index] for g in self._column_groups]
 
     def __getitem__(self, ix: Union[int, slice]):
         """
@@ -173,9 +173,9 @@ class DFDataset(EasyDataset):
         :return: A subset of items.
         """
         if self._single:
-            return self._item_to_numpy(self._df[self._column_groups[0]].iloc[ix])
+            return self._item_to_numpy(self._groups[0].iloc[ix])
         else:
-            return tuple([self._item_to_numpy(self._df[g].iloc[ix]) for g in self._column_groups])
+            return tuple([self._item_to_numpy(g.iloc[ix]) for g in self._groups])
 
 
 DFDataset.__signature__ = inspect.signature(DFDataset.__init__)
