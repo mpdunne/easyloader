@@ -9,6 +9,8 @@ By introducing various efficiencies and additional functionality, **EasyLoader**
 
 ## Usage
 
+You can install EasyLoader using pip: `pip install easyloader`.
+
 Three flavours of `EasyLoader` and `EasyDataset` class are provided.
 
 ### Arrays
